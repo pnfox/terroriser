@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 import os
 import re
+from multiprocessing import Process
 
 import terroriser
 
@@ -61,6 +62,10 @@ class App():
         self.listbox = Listbox(root)
         insertSomOptions(self.listbox)
         self.listbox.grid(column=0, row=1)
+        self.label_message = StringVar()
+        self.label_message = "";
+        self.info_box = Label(root, textvariable=self.label_message,height=11, width=50)
+        self.info_box.grid(column=0, row=2, sticky='NSWE')
         ok = ttk.Button(root, text="Okay", command=okEvent)
         cancel = ttk.Button(root, text="Cancel")
 
@@ -82,7 +87,10 @@ def okEvent():
             options += "&f_" + frame.checkbarNames[i]
         i += 1
     url = "http://rage/?p=som_data&id=" + str(somID) + options
-    terroriser.analyseData(url)
+    #terroriser.analyseData(url)
+    p = Process(target=terroriser.analyseData(url), args=(url,))
+    p.start()
+    p.join()
 
 somID = 266
 if __name__=="__main__":
