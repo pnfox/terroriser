@@ -56,10 +56,19 @@ class CheckBar(Frame):
 soms = {"Duration of nth VM clone" : 266,
         "Total duration of VM clones" : 33,
         "Duration of joining domain" : 458}
+xaxis = {"branch": 0,
+         "product": 1,
+         "build_number": 2,
+         "build_date": 3,
+         "build_tag":4,
+         "job_id": 5}
 
-def insertSomOptions(lbox):
-    for k in soms.keys():
-        v = soms.get(k)
+# Inserts dict key,value pairs to a listbox
+def insertListOptions(lbox, dict):
+    if lbox == None:
+        return
+    for k in dict.keys():
+        v = dict.get(k)
         lbox.insert(v, k)
 
 class App():
@@ -68,10 +77,15 @@ class App():
         ttk.Style().theme_use('clam')
         self.checkbar = CheckBar(root, [])
         self.checkbar.grid(column=1, row=0)
-        self.listbox = Listbox(root, width=50)
-        insertSomOptions(self.listbox)
+        self.listbox = Listbox(root, exportselection=0, width=50)
+        insertListOptions(self.listbox, soms)
         self.listbox.grid(column=0, row=0)
         self.listbox.bind("<Double-Button-1>", self.onDouble)
+
+        self.xaxisList = Listbox(root, selectmode=MULTIPLE, exportselection=0, width=40)
+        insertListOptions(self.xaxisList, xaxis)
+        self.xaxisList.grid(column=0, row=1)
+
         self.label_message = StringVar()
         self.label_message.set("")
         self.info_box = Label(root, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
@@ -89,15 +103,20 @@ class App():
         frame.checkbar.update(findSplits(somID))
 
 def okEvent():
+
+    options = ""
     checkbarStates = frame.checkbar.vars
     listSelected = frame.listbox.curselection()
     if not listSelected:
         return
+    # parse xaxisList selection
+    for i in frame.xaxisList.curselection():
+        options += "&xaxis=" + frame.xaxisList.get(i)
 
     somID = soms.get(frame.listbox.get(listSelected))
     frame.label_message.set("Graphing data for SOM: " + str(somID))
     i = 0
-    options = ""
+
     for state in checkbarStates:
         if state.get() == 1:
             # checkbox has been ticked
