@@ -60,7 +60,7 @@ soms = {"Duration of nth VM clone" : 266,
 def insertSomOptions(lbox):
     for k in soms.keys():
         v = soms.get(k)
-        lbox.insert(v, k + "      " + str(v))
+        lbox.insert(v, k)
 
 class App():
     def __init__(self):
