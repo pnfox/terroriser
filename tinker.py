@@ -43,6 +43,7 @@ class CheckBar(Frame):
         return map((lambda var: var.get()), self.vars)
 
     def update(self, picks=[]):
+        self.vars = []
         for pick in picks:
            var = IntVar()
            chk = Checkbutton(self, text=pick, variable=var)
@@ -82,6 +83,8 @@ class App():
         self.listbox.grid(column=0, row=0)
         self.listbox.bind("<Double-Button-1>", self.onDouble)
 
+        self.splits = []
+
         self.xaxisList = Listbox(root, selectmode=MULTIPLE, exportselection=0, width=40)
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=1)
@@ -100,7 +103,8 @@ class App():
     def onDouble(self, event):
         somID = soms.get(frame.listbox.get(frame.listbox.curselection()))
         frame.checkbar.clear()
-        frame.checkbar.update(findSplits(somID))
+        self.splits = findSplits(somID)
+        frame.checkbar.update(self.splits)
 
 def okEvent():
 
@@ -115,13 +119,14 @@ def okEvent():
 
     somID = soms.get(frame.listbox.get(listSelected))
     frame.label_message.set("Graphing data for SOM: " + str(somID))
-    i = 0
+    j = 0
 
     for state in checkbarStates:
         if state.get() == 1:
             # checkbox has been ticked
-            options += "&f_" + frame.checkbarNames[i]
-        i += 1
+            print(j)
+            options += "&f_" + frame.splits[j]
+        j = j + 1
     url = "http://rage/?p=som_data&id=" + str(somID) + options
     p = Process(target=terroriser.analyseData(url), args=(url,))
     p.start()
