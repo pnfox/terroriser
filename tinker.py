@@ -128,9 +128,12 @@ def okEvent():
             options += "&f_" + frame.splits[j]
         j = j + 1
     url = "http://rage/?p=som_data&id=" + str(somID) + options
-    p = Process(target=terroriser.analyseData(url), args=(url,))
-    p.start()
-    p.join()
+    try:
+        p = Process(target=terroriser.analyseData(url), args=(url,))
+        p.start()
+        p.join()
+    except:
+        frame.label_message.set("Failed to graph")
 
 if __name__=="__main__":
     frame = App()

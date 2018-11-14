@@ -4,6 +4,9 @@ import json
 import matplotlib.pyplot as plt
 
 points = None
+nPoints = 0
+numOfSplits = 0
+axisPos = 0
 xaxis = ""
 yaxis = ""
 
@@ -20,6 +23,10 @@ def json2points(f):
     global points
     points = data.get("series")
     points = points[0].get("data")
+    global numOfSplits
+    numOfSplits = len(points[0][2].keys())
+    global axisPos
+    axisPos = list(points[0][2]).index(xaxis)
 
     results = []
     # find split options in json
@@ -30,6 +37,8 @@ def json2points(f):
         for v in dict.values():
             results[j].append(v)
         j += 1
+    global nPoints
+    nPoints = j
 
     # results = [xvalue, yvalue, option1, option2, ...]
     return results
@@ -49,7 +58,7 @@ def drawGraph(dataPoints):
         text = "Not found"
         for p in dataPoints:
             if p[0] == pos[0] and p[1] == pos[1]:
-                text = p[2].get(xl)
+                text = p[2]
         annot.set_text(text)
         annot.get_bbox_patch().set_alpha(0.4)
 
@@ -67,12 +76,41 @@ def drawGraph(dataPoints):
                     annot.set_visible(False)
                     fig.canvas.draw_idle()
 
+    # if we have chosen to split then plot multiple graphs
+    global numOfSplits
     x = []; y = []
-    for p in dataPoints:
-        x.append(p[0])
-        y.append(p[1])
+    if numOfSplits > 1:
+        group = []
+        global axisPos
+        for p in dataPoints:
+            # collect different x,y's of each split value, excluding xaxis
+            s = ""
+            for i in range(numOfSplits):
+                if i == axisPos:
+                    continue
+                else:
+                    s += p[i+2]
+            try:
+                position = group.index(s)
+                x[position].append(p[0])
+                y[position].append(p[1])
+            except:
+                # didnt match
+                group.append(s)
+                x.append([]); y.append([])
 
-    sc = plt.scatter(x,y)
+    elif numOfSplits == 1:
+        for p in dataPoints:
+            x.append(p[0])
+            y.append(p[1])
+
+    global nPoints
+    pointSize=250/(nPoints)**0.4
+    if numOfSplits > 1:
+        for i in range(len(x)):
+            plt.scatter(x[i], y[i], s=pointSize)
+    else:
+        sc = plt.scatter(x,y, s=pointSize)
     global xaxis; global yaxis
     plt.xlabel(xaxis)
     plt.ylabel(yaxis)
