@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 points = None
 nPoints = 0
 numOfSplits = 0
-axisPos = 0
+axisPos = []
 xaxis = ""
 yaxis = ""
 
@@ -19,6 +19,7 @@ def json2points(f):
     global xaxis
     global yaxis
     xaxis = data.get("xaxis")
+    print(xaxis)
     yaxis = data.get("yaxis")
     global points
     points = data.get("series")
@@ -26,7 +27,8 @@ def json2points(f):
     global numOfSplits
     numOfSplits = len(points[0][2].keys())
     global axisPos
-    axisPos = list(points[0][2]).index(xaxis)
+    for x in xaxis.split(","):
+        axisPos.append(list(points[0][2]).index(x))
 
     results = []
     # find split options in json
@@ -86,7 +88,7 @@ def drawGraph(dataPoints):
             # collect different x,y's of each split value, excluding xaxis
             s = ""
             for i in range(numOfSplits):
-                if i == axisPos:
+                if i in axisPos:
                     continue
                 else:
                     s += p[i+2]
