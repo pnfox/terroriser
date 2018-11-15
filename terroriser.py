@@ -19,7 +19,6 @@ def json2points(f):
     global xaxis
     global yaxis
     xaxis = data.get("xaxis")
-    print(xaxis)
     yaxis = data.get("yaxis")
     global points
     points = data.get("series")
@@ -45,7 +44,9 @@ def json2points(f):
     # results = [xvalue, yvalue, option1, option2, ...]
     return results
 
-def drawGraph(dataPoints):
+def drawGraph(dataPoints, config):
+
+    showlegend = config[0]
 
     fig,ax = plt.subplots()
     annot = ax.annotate("", xy=(0,0), xytext=(20,20),textcoords="offset points",
@@ -91,7 +92,7 @@ def drawGraph(dataPoints):
                 if i in axisPos:
                     continue
                 else:
-                    s += p[i+2]
+                    s += p[i+2] + ","
             try:
                 position = group.index(s)
                 x[position].append(p[0])
@@ -107,10 +108,13 @@ def drawGraph(dataPoints):
             y.append(p[1])
 
     global nPoints
-    pointSize=250/(nPoints)**0.4
+    pointSize=250/(nPoints)**0.35
     if numOfSplits > 1:
         for i in range(len(x)):
-            plt.scatter(x[i], y[i], s=pointSize)
+            if showlegend:
+                plt.scatter(x[i], y[i], s=pointSize, label=group[i])
+            else:
+                plt.scatter(x[i], y[i], s=pointSize)
     else:
         sc = plt.scatter(x,y, s=pointSize)
     global xaxis; global yaxis
@@ -118,14 +122,16 @@ def drawGraph(dataPoints):
     plt.ylabel(yaxis)
     cid = fig.canvas.mpl_connect("button_press_event", onclick)
 
+    if showlegend:
+        plt.legend()
     plt.show()
     fig.canvas.mpl_disconnect(cid)
 
-def analyseData(url):
+def analyseData(url, config):
     somID = re.search(r"id=(\d+)", url).group(1)
     # catch exception that wget fails (or maybe rage unavailable)
     os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
     print("Fetched data from " + url)
     raw = open("/tmp/somdata" + str(somID))
     points = json2points(raw)
-    drawGraph(points)
+    drawGraph(points, config)

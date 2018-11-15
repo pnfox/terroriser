@@ -8,7 +8,7 @@ import terroriser
 
 root = Tk()
 root.title("Terroriser")
-root.geometry("500x300")
+root.geometry("600x400")
 
 #
 # Finds the options that we can split by after tc_config_id
@@ -85,7 +85,7 @@ class App():
 
         self.splits = []
 
-        self.xaxisList = Listbox(root, selectmode=MULTIPLE, exportselection=0, width=40)
+        self.xaxisList = Listbox(root, selectmode=MULTIPLE, exportselection=0, width=20)
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=1)
 
@@ -93,6 +93,10 @@ class App():
         self.label_message.set("")
         self.info_box = Label(root, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
         self.info_box.grid(column=0, row=2, sticky='NSWE')
+
+        self.legend = IntVar()
+        self.legendOption = Checkbutton(root, text="Show legend", variable=self.legend)
+        self.legendOption.grid(column=3, row=1)
 
         graphButton = ttk.Button(root, text="Graph", command=okEvent)
         cancelButton = ttk.Button(root, text="Quit", command=root.destroy)
@@ -128,11 +132,13 @@ def okEvent():
             options += "&f_" + frame.splits[j]
         j = j + 1
     url = "http://rage/?p=som_data&id=" + str(somID) + options
+    config = [frame.legend.get()]
     try:
-        p = Process(target=terroriser.analyseData(url), args=(url,))
+        p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
         p.start()
         p.join()
-    except:
+    except e:
+        print(e)
         frame.label_message.set("Failed to graph")
 
 if __name__=="__main__":
