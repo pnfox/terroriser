@@ -55,29 +55,51 @@ def drawGraph(dataPoints, config):
     annot.set_visible(False)
 
 
-    def update_annot(ind):
-        pos = sc.get_offsets()[ind["ind"][0]]
+    def update_annot(ind, plotIndex):
+        pos = sc[plotIndex].get_offsets()[ind["ind"][0]]
         annot.xy = pos
         text = "Not found"
-        for p in dataPoints:
-            if p[0] == pos[0] and p[1] == pos[1]:
-                text = p[2]
+
+        if type(x[0]) is not int:
+            # we need to find where x[plotIndex] starts in dataPoints
+            s = 0
+            for i in x:
+                if i == x[plotIndex]:
+                    break
+                s += len(i)
+
+            for p in range(len(x[plotIndex])):
+                if x[plotIndex][p] == pos[0] and y[plotIndex][p] == pos[1]:
+                    # FIX: p doesn't point to same point in x and dataPoints
+                    # fix with this p = len(x[plotIndex]) + p
+                    text = "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n" + str(dataPoints[s+p][2])
+                    break
+        else:
+            for p in dataPoints:
+                if p[0] == pos[0] and p[1] == pos[1]:
+                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n" + str(p[2])
+                    break
         annot.set_text(text)
-        annot.get_bbox_patch().set_alpha(0.4)
+        annot.get_bbox_patch().set_alpha(0.2)
 
 
     def onclick(event):
         vis = annot.get_visible()
         if event.inaxes == ax:
-            cont, ind = sc.contains(event)
-            if cont:
-                update_annot(ind)
-                annot.set_visible(True)
-                fig.canvas.draw_idle()
-            else:
-                if vis:
-                    annot.set_visible(False)
+            k = 0
+            for plots in sc:
+                cont, ind = plots.contains(event)
+                if cont:
+                    update_annot(ind, k)
+                    annot.set_visible(True)
                     fig.canvas.draw_idle()
+                    break
+                else:
+                    if vis:
+                        annot.set_visible(False)
+                        fig.canvas.draw_idle()
+                        break
+                k += 1
 
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
@@ -109,14 +131,15 @@ def drawGraph(dataPoints, config):
 
     global nPoints
     pointSize=250/(nPoints)**0.35
+    sc = []
     if numOfSplits > 1:
         for i in range(len(x)):
             if showlegend:
-                plt.scatter(x[i], y[i], s=pointSize, label=group[i])
+                sc.append(plt.scatter(x[i], y[i], s=pointSize, label=group[i]))
             else:
-                plt.scatter(x[i], y[i], s=pointSize)
+                sc.append(plt.scatter(x[i], y[i], s=pointSize))
     else:
-        sc = plt.scatter(x,y, s=pointSize)
+        sc.append(plt.scatter(x,y, s=pointSize))
     global xaxis; global yaxis
     plt.xlabel(xaxis)
     plt.ylabel(yaxis)
