@@ -91,39 +91,49 @@ def insertListOptions(lbox, dict):
 
 class App():
     def __init__(self):
-        self.content = ttk.Frame(root)
+        self.content = ttk.Frame(root).grid(column=0,row=0)
         ttk.Style().theme_use('clam')
+        topFrame = ttk.Frame(self.content)
+        bottomFrame = ttk.Frame(self.content)
 
         self.somTypeSelected = StringVar()
         self.somTypeSelected.set(somTypes[0])
-        somTypesOption = OptionMenu(root, self.somTypeSelected, *somTypes, command=self.getSelection).grid(column=0, row=0)
+        somTypesOption = OptionMenu(topFrame, self.somTypeSelected, *somTypes, command=self.getSelection).grid(column=0, row=0)
 
-        self.checkbar = CheckBar(root, [])
+        Label(topFrame, text="Double click on som\nto see split options").grid(column=1, row=0)
+        self.checkbar = CheckBar(topFrame, [])
         self.checkbar.grid(column=1, row=1, columnspan=2)
-        self.somListbox = Listbox(root, exportselection=0, width=30)
+        self.somListbox = Listbox(topFrame, exportselection=0, width=30)
         self.somListbox.grid(column=0, row=1, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
 
         self.splits = []
 
-        self.xaxisList = Listbox(root, selectmode=MULTIPLE, exportselection=0, width=20)
+        self.xaxisList = Listbox(topFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=5)
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=2, sticky=W)
 
+        Label(bottomFrame, text="SOM number:").grid(column=0,row=0)
+        self.somNumber = Entry(bottomFrame, bd=5).grid(column=1,row=0)
+
         self.label_message = StringVar()
         self.label_message.set("")
-        self.info_box = Label(root, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
+        self.info_box = Label(topFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
         self.info_box.grid(column=0, row=3, sticky='NSWE')
 
+        Label(bottomFrame, text="Show legend:").grid(column=0, row=1)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(root, text="Show legend", variable=self.legend)
-        self.legendOption.grid(column=1, row=2, sticky='NSWE', columnspan=2)
+        self.legendOption = Checkbutton(bottomFrame, variable=self.legend, height=4, width=5)
+        self.legendOption.grid(column=1,row=1)
 
-        graphButton = ttk.Button(root, text="Graph", command=okEvent)
-        cancelButton = ttk.Button(root, text="Quit", command=root.destroy)
+        graphButton = ttk.Button(bottomFrame, text="Graph", command=okEvent)
+        cancelButton = ttk.Button(bottomFrame, text="Quit", command=root.destroy)
 
-        graphButton.place(relx=0.5, rely=1.0, anchor=SE)
-        cancelButton.place(relx=1.0, rely=1.0, anchor=SE)
+        graphButton.grid(column=0, row=2)
+        cancelButton.grid(column=1,row=2)
+
+        topFrame.grid(column=0, row=0)
+        bottomFrame.grid(column=1, row=0)
 
     def onDouble(self, event):
         tmpDict = soms.get(frame.somTypeSelected.get())
