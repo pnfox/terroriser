@@ -6,6 +6,8 @@ from multiprocessing import Process
 
 import terroriser
 
+tmpFiles = []
+
 root = Tk()
 root.title("Terroriser")
 root.geometry("600x400")
@@ -15,6 +17,8 @@ root.geometry("600x400")
 #
 def findSplits(id):
     os.system("wget -q http://rage/?som=" + str(id) + " -O /tmp/som" + str(id))
+    global tmpFiles
+    tmpFiles.append("/tmp/som"+str(id))
     # analyse html output to find which options are available for splitting
     somFile = open("/tmp/som"+str(id))
     splits = []
@@ -137,10 +141,20 @@ def okEvent():
         p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
         p.start()
         p.join()
+        global tmpFiles
+        tmpFiles.append("/tmp/somdata" + str(somID))
     except e:
         print(e)
         frame.label_message.set("Failed to graph")
 
+def cleanup():
+    for file in tmpFiles:
+        try:
+            os.system("rm -f " + file)
+        except:
+            print("Failed to remove " + file)
+
 if __name__=="__main__":
     frame = App()
     root.mainloop()
+    cleanup()
