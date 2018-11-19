@@ -3,12 +3,13 @@ from tkinter import ttk
 import os
 import re
 from multiprocessing import Process
+from json import JSONDecodeError
 
 import terroriser
 
 root = Tk()
 root.title("Terroriser")
-root.geometry("600x400")
+root.geometry("700x400")
 
 #
 # Finds the options that we can split by after tc_config_id
@@ -113,8 +114,9 @@ class App():
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=2, sticky=W)
 
-        Label(bottomFrame, text="SOM number:").grid(column=0,row=0)
-        self.somNumber = Entry(bottomFrame, bd=5).grid(column=1,row=0)
+        Label(bottomFrame, text="SOM number\n(optional):").grid(column=0,row=0)
+        self.somNumber = Entry(bottomFrame, bd=2)
+        self.somNumber.grid(column=1,row=0)
 
         self.label_message = StringVar()
         self.label_message.set("")
@@ -155,30 +157,43 @@ def okEvent():
     checkbarStates = frame.checkbar.vars
     listSelected = frame.somListbox.curselection()
     if not listSelected:
-        return
+        somID = frame.somNumber.get()
+        if not somID:
+            return
     # parse xaxisList selection
     for i in frame.xaxisList.curselection():
         options += "&xaxis=" + frame.xaxisList.get(i)
 
-    tmpDict = soms.get(frame.somTypeSelected.get())
-    somID = tmpDict.get(frame.somListbox.get(listSelected))
-    if somID == None:
-        return
-    frame.label_message.set("Graphing data for SOM: " + str(somID))
-    j = 0
+    somID = frame.somNumber.get()
+    # if no input from som number text box then use selection
+    # from listbox of soms
+    if not somID:
+        tmpDict = soms.get(frame.somTypeSelected.get())
+        somID = tmpDict.get(frame.somListbox.get(listSelected))
+        if somID == None:
+            return
+        frame.label_message.set("Graphing data for SOM: " + str(somID))
+        j = 0
 
-    for state in checkbarStates:
-        if state.get() == 1:
-            # checkbox has been ticked
-            print(j)
-            options += "&f_" + frame.splits[j]
-        j = j + 1
-    url = "http://rage/?p=som_data&id=" + str(somID) + options
+        for state in checkbarStates:
+            if state.get() == 1:
+                # checkbox has been ticked
+                options += "&f_" + frame.splits[j]
+            j = j + 1
+        url = "http://rage/?p=som_data&id=" + str(somID) + options
+    else:
+        # we have input from Som number textbox so use this
+        url = "http://rage/?p=som_data&id=" + str(somID)
+        options = ""
     config = [frame.legend.get()]
     try:
+        # start graphing
         p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
         p.start()
         p.join()
+        # TODO: catch process error code for better error logging
+    except JSONDecodeError:
+        frame.label_message.set("Invalid SOM number")
     except e:
         print(e)
         frame.label_message.set("Failed to graph")
