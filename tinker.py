@@ -99,6 +99,7 @@ class App():
         self.content = ttk.Frame(root).grid(column=0,row=0)
         ttk.Style().theme_use('clam')
         topFrame = ttk.Frame(self.content)
+        sideFrame = ttk.Frame(self.content)
         bottomFrame = ttk.Frame(self.content)
 
         self.somTypeSelected = StringVar()
@@ -118,28 +119,33 @@ class App():
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=2, sticky=W)
 
-        Label(bottomFrame, text="SOM number\n(optional):").grid(column=0,row=0)
-        self.somNumber = Entry(bottomFrame, bd=2)
+        Label(sideFrame, text="SOM number\n(optional):").grid(column=0,row=0)
+        self.somNumber = Entry(sideFrame, bd=2)
         self.somNumber.grid(column=1,row=0)
+
+        Label(sideFrame, text="URL\n(optional): ").grid(column=0, row=1)
+        self.url = Entry(sideFrame, bd=2)
+        self.url.grid(column=1, row=1)
 
         self.label_message = StringVar()
         self.label_message.set("")
         self.info_box = Label(topFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
         self.info_box.grid(column=0, row=3, sticky='NSWE')
 
-        Label(bottomFrame, text="Show legend:").grid(column=0, row=1)
+        Label(sideFrame, text="Show legend:").grid(column=0, row=2)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(bottomFrame, variable=self.legend, height=4, width=5)
-        self.legendOption.grid(column=1,row=1)
+        self.legendOption = Checkbutton(sideFrame, variable=self.legend, height=4, width=5)
+        self.legendOption.grid(column=1,row=2)
 
         graphButton = ttk.Button(bottomFrame, text="Graph", command=okEvent)
         cancelButton = ttk.Button(bottomFrame, text="Quit", command=root.destroy)
 
-        graphButton.grid(column=0, row=2)
-        cancelButton.grid(column=1,row=2)
+        graphButton.grid(column=0, row=0)
+        cancelButton.grid(column=1,row=0)
 
         topFrame.grid(column=0, row=0)
-        bottomFrame.grid(column=1, row=0)
+        sideFrame.grid(column=1, row=0)
+        bottomFrame.grid(column=0, row=1, columnspan=2)
 
     def onDouble(self, event):
         tmpDict = soms.get(frame.somTypeSelected.get())
@@ -158,23 +164,31 @@ class App():
 def okEvent():
 
     options = ""
+    somID = None
     checkbarStates = frame.checkbar.vars
     listSelected = frame.somListbox.curselection()
-    if not listSelected:
-        somID = frame.somNumber.get()
-        if not somID:
-            return
+    url = frame.url.get()
+    id = frame.somNumber.get()
     # parse xaxisList selection
     for i in frame.xaxisList.curselection():
         options += "&xaxis=" + frame.xaxisList.get(i)
 
-    somID = frame.somNumber.get()
-    # if no input from som number text box then use selection
-    # from listbox of soms
-    if not somID:
+    if url:
+        # we use url from url TextBox, check validation
+        if not re.match(r'http://rage/\?(som|t)=', url):
+            frame.label_message.set("Invalid url provided")
+            return
+        else:
+            url = parseUrl(url)
+            if not url:
+                frame.label_message.set("Using raw url")
+    elif id:
+        somID = id
+        url = "http://rage/?p=som_data&id=" + str(somID)
+    elif listSelected:
         tmpDict = soms.get(frame.somTypeSelected.get())
         somID = tmpDict.get(frame.somListbox.get(listSelected))
-        if somID == None:
+        if not somID:
             return
         frame.label_message.set("Graphing data for SOM: " + str(somID))
         j = 0
@@ -186,9 +200,8 @@ def okEvent():
             j = j + 1
         url = "http://rage/?p=som_data&id=" + str(somID) + options
     else:
-        # we have input from Som number textbox so use this
-        url = "http://rage/?p=som_data&id=" + str(somID)
-        options = ""
+        return
+
     config = [frame.legend.get()]
     try:
         # start graphing
@@ -198,11 +211,20 @@ def okEvent():
         # TODO: catch process error code for better error logging
     except JSONDecodeError:
         frame.label_message.set("Invalid SOM number")
-    except e:
-        print(e)
+    except:
         frame.label_message.set("Failed to graph")
     global tmpFiles
-    tmpFiles.append("/tmp/somdata" + str(somID))
+    if somID:
+        tmpFiles.append("/tmp/somdata" + str(somID))
+
+def parseUrl(url):
+    somID = re.search(r'som=(\d+)', url).group(1)
+    if not somID:
+        frame.label_message.set("Invalid url provided")
+        return None
+
+    newUrl = "http://rage/?p=som_data&id=" + str(somID)
+    return newUrl
 
 def cleanup():
     for file in tmpFiles:
