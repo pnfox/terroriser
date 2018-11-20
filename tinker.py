@@ -210,7 +210,7 @@ def okEvent():
         p.join()
         # TODO: catch process error code for better error logging
     except JSONDecodeError:
-        frame.label_message.set("Invalid SOM number")
+        frame.label_message.set("Failed to parse JSON")
     except:
         frame.label_message.set("Failed to graph")
     global tmpFiles
@@ -218,12 +218,29 @@ def okEvent():
         tmpFiles.append("/tmp/somdata" + str(somID))
 
 def parseUrl(url):
-    somID = re.search(r'som=(\d+)', url).group(1)
-    if not somID:
+    options = ""
+    tmp = re.search(r'rage/\?t=(\d+)$', url)
+    if tmp:
+        t = tmp.group(1)
+    tmp = re.search(r'som=(\d+)', url)
+    if tmp:
+        somID = tmp.group(1)
+        newUrl = "http://rage/?p=som_data&id=" + str(somID)
+    if t:
+        index = 0
+        output = os.popen("curl -sL " + url).read().split("%")
+        for i in output[3:]:
+            i = i[2:].split("'")[0]
+            options += i
+            if index % 2 == 0:
+                options += "&"
+            else:
+                options += "="
+            index += 1
+        newUrl = "http://rage/?p=som_data&id=" + options
+    elif not somID:
         frame.label_message.set("Invalid url provided")
         return None
-
-    newUrl = "http://rage/?p=som_data&id=" + str(somID)
     return newUrl
 
 def cleanup():
