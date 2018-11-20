@@ -127,21 +127,26 @@ class App():
         self.url = Entry(sideFrame, bd=2)
         self.url.grid(column=1, row=1)
 
+        splitsButton = ttk.Button(sideFrame, text="Update Splits", command=updateSplits)
+        splitsButton.grid(column=1, row=2)
+
         self.label_message = StringVar()
         self.label_message.set("")
         self.info_box = Label(topFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
         self.info_box.grid(column=0, row=3, sticky='NSWE')
 
-        Label(sideFrame, text="Show legend:").grid(column=0, row=2)
+        Label(sideFrame, text="Show legend:").grid(column=0, row=3)
         self.legend = IntVar()
         self.legendOption = Checkbutton(sideFrame, variable=self.legend, height=4, width=5)
-        self.legendOption.grid(column=1,row=2)
+        self.legendOption.grid(column=1,row=3)
 
+        resetButton = ttk.Button(bottomFrame, text="Reset", command=reset)
         graphButton = ttk.Button(bottomFrame, text="Graph", command=okEvent)
         cancelButton = ttk.Button(bottomFrame, text="Quit", command=root.destroy)
 
         graphButton.grid(column=0, row=0)
-        cancelButton.grid(column=1,row=0)
+        resetButton.grid(column=1, row=0)
+        cancelButton.grid(column=2,row=0)
 
         topFrame.grid(column=0, row=0)
         sideFrame.grid(column=1, row=0)
@@ -161,8 +166,13 @@ class App():
         s = soms.get(self.somTypeSelected.get())
         insertListOptions(frame.somListbox, s)
 
-def okEvent():
+def reset():
+    frame.checkbar.clear()
+    frame.somListbox.delete(0, frame.somListbox.size()-1)
+    frame.url.delete(0, len(frame.url.get()))
+    frame.somNumber.delete(0, len(frame.somNumber.get()))
 
+def okEvent():
     options = ""
     somID = None
     checkbarStates = frame.checkbar.vars
@@ -179,7 +189,7 @@ def okEvent():
             frame.label_message.set("Invalid url provided")
             return
         else:
-            url = parseUrl(url)
+            url = parseTinyUrl(url)
             if not url:
                 frame.label_message.set("Using raw url")
     elif id:
@@ -217,8 +227,30 @@ def okEvent():
     if somID:
         tmpFiles.append("/tmp/somdata" + str(somID))
 
-def parseUrl(url):
-    options = ""
+def updateSplits():
+    # if we have used Som Number TextBox
+    id = frame.somNumber.get()
+    urlTextInput = frame.url.get()
+    if id:
+        somID = id
+    # if we have used url textbox
+    elif urlTextInput:
+        tmp = re.search(r'som=(\d+)', urlTextInput)
+        tmp2 = re.search(r'rage/\?t=(\d+)$', urlTextInput)
+        if tmp:
+            somID = tmp.group(1)
+        elif tmp2:
+            somID = parseTinyUrl(url)
+
+    splits = findSplits(somID)
+    if splits:
+        frame.checkbar.clear()
+        frame.checkbar.update(splits)
+    else:
+        frame.label_message.set("Could not update splits")
+
+def parseTinyUrl(url):
+    curl = ""
     tmp = re.search(r'rage/\?t=(\d+)$', url)
     if tmp:
         t = tmp.group(1)
@@ -229,15 +261,16 @@ def parseUrl(url):
     if t:
         index = 0
         output = os.popen("curl -sL " + url).read().split("%")
+        somID = output[3][2:]
         for i in output[3:]:
             i = i[2:].split("'")[0]
-            options += i
+            curl += i
             if index % 2 == 0:
-                options += "&"
+                curl += "&"
             else:
-                options += "="
+                curl += "="
             index += 1
-        newUrl = "http://rage/?p=som_data&id=" + options
+        newUrl = "http://rage/?p=som_data&id=" + curl
     elif not somID:
         frame.label_message.set("Invalid url provided")
         return None
