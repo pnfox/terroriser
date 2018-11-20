@@ -172,10 +172,19 @@ def reset():
     frame.url.delete(0, len(frame.url.get()))
     frame.somNumber.delete(0, len(frame.somNumber.get()))
 
-def okEvent():
+def getOptions():
     options = ""
-    somID = None
     checkbarStates = frame.checkbar.vars
+    j = 0
+    for state in checkbarStates:
+        if state.get() == 1:
+            # checkbox has been ticked
+            options += "&f_" + frame.splits[j]
+        j = j + 1
+    return options
+
+def okEvent():
+    somID = None
     listSelected = frame.somListbox.curselection()
     url = frame.url.get()
     id = frame.somNumber.get()
@@ -192,22 +201,17 @@ def okEvent():
             url = parseTinyUrl(url)
             if not url:
                 frame.label_message.set("Using raw url")
+    # if we used somID textbox
     elif id:
         somID = id
-        url = "http://rage/?p=som_data&id=" + str(somID)
+        url = "http://rage/?p=som_data&id=" + str(somID) + getOptions()
     elif listSelected:
         tmpDict = soms.get(frame.somTypeSelected.get())
         somID = tmpDict.get(frame.somListbox.get(listSelected))
         if not somID:
             return
         frame.label_message.set("Graphing data for SOM: " + str(somID))
-        j = 0
-
-        for state in checkbarStates:
-            if state.get() == 1:
-                # checkbox has been ticked
-                options += "&f_" + frame.splits[j]
-            j = j + 1
+        options = getOptions()
         url = "http://rage/?p=som_data&id=" + str(somID) + options
     else:
         return
@@ -242,22 +246,24 @@ def updateSplits():
         elif tmp2:
             somID = parseTinyUrl(url)
 
-    splits = findSplits(somID)
-    if splits:
+    frame.splits = findSplits(somID)
+    if frame.splits:
         frame.checkbar.clear()
-        frame.checkbar.update(splits)
+        frame.checkbar.update(frame.splits)
     else:
         frame.label_message.set("Could not update splits")
 
 def parseTinyUrl(url):
     curl = ""
+    t = None
     tmp = re.search(r'rage/\?t=(\d+)$', url)
     if tmp:
         t = tmp.group(1)
-    tmp = re.search(r'som=(\d+)', url)
+    tmp = re.search(r'som=(\d+)(.*)', url)
     if tmp:
         somID = tmp.group(1)
-        newUrl = "http://rage/?p=som_data&id=" + str(somID)
+        otherthings = tmp.group(2)
+        newUrl = "http://rage/?p=som_data&id=" + str(somID) + otherthings
     if t:
         index = 0
         output = os.popen("curl -sL " + url).read().split("%")
