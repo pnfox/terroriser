@@ -108,6 +108,9 @@ def drawGraph(dataPoints, config):
         if event.inaxes == ax:
             k = 0
             for plots in sc:
+                # tmp fix for disabling annotations on line graphs
+                if type(plots) is list:
+                    return
                 cont, ind = plots.contains(event)
                 if cont:
                     update_annot(ind, k)
@@ -158,7 +161,6 @@ def drawGraph(dataPoints, config):
             if showlegend:
                 # order points so that plotted properly
                 x[i], y[i] = order(x[i], y[i])
-                print(len(x[i]))
                 sc.append(plt.plot(x[i], y[i], label=group[i]))
             else:
                 sc.append(plt.scatter(x[i], y[i], s=pointSize))
