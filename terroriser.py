@@ -25,6 +25,7 @@ def json2points(f):
     points = points[0].get("data")
     global numOfSplits
     numOfSplits = len(points[0][2].keys())
+    print("numOfSplits: ", numOfSplits)
     global axisPos
     for x in xaxis.split(","):
         axisPos.append(list(points[0][2]).index(x))
