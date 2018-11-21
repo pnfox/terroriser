@@ -3,7 +3,7 @@ import re
 import json
 import matplotlib.pyplot as plt
 
-points = None
+points = []
 nPoints = 0
 numOfSplits = 0
 axisPos = []
@@ -21,14 +21,15 @@ def json2points(f):
     xaxis = data.get("xaxis")
     yaxis = data.get("yaxis")
     global points
-    points = data.get("series")
-    points = points[0].get("data")
+    series = data.get("series")
+    for i in range(len(series)):
+         for p in series[i].get("data"):
+             points.append(p)
     global numOfSplits
     numOfSplits = len(points[0][2].keys())
-    print("numOfSplits: ", numOfSplits)
     global axisPos
     for x in xaxis.split(","):
-        axisPos.append(list(points[0][2]).index(x))
+        axisPos.append(list(points[0][2].keys()).index(x))
 
     results = []
     # find split options in json
@@ -105,7 +106,7 @@ def drawGraph(dataPoints, config):
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
     x = []; y = []
-    if numOfSplits > 1:
+    if numOfSplits > 1 or config[1]:
         group = []
         global axisPos
         for p in dataPoints:
@@ -113,9 +114,9 @@ def drawGraph(dataPoints, config):
             s = ""
             for i in range(numOfSplits):
                 if i in axisPos:
-                    continue
-                else:
-                    s += p[i+2] + ","
+                    if config[1] == 0:
+                        continue
+                s += p[i+2] + ","
             try:
                 position = group.index(s)
                 x[position].append(p[0])
@@ -133,12 +134,14 @@ def drawGraph(dataPoints, config):
     global nPoints
     pointSize=250/(nPoints)**0.35
     sc = []
-    if numOfSplits > 1:
+    # if we use splits or config[1] then color different plots
+    if numOfSplits > 1 or config[1]:
         for i in range(len(x)):
             if showlegend:
-                sc.append(plt.scatter(x[i], y[i], s=pointSize, label=group[i]))
+                sc.append(plt.plot(x[i], y[i], label=group[i]))
             else:
                 sc.append(plt.scatter(x[i], y[i], s=pointSize))
+    # no color used
     else:
         sc.append(plt.scatter(x,y, s=pointSize))
     global xaxis; global yaxis
