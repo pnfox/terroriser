@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import operator
 import matplotlib.pyplot as plt
 
 points = []
@@ -45,6 +46,57 @@ def json2points(f):
 
     # results = [xvalue, yvalue, option1, option2, ...]
     return results
+
+# Python program for implementation of MergeSort
+def mergeSort(arr):
+    if len(arr) >1:
+        mid = len(arr)//2 #Finding the mid of the array
+        L = arr[:mid] # Dividing the array elements
+        R = arr[mid:] # into 2 halves
+
+        mergeSort(L) # Sorting the first half
+        mergeSort(R) # Sorting the second half
+
+        i = j = k = 0
+
+        # Copy data to temp arrays L[] and R[]
+        while i < len(L) and j < len(R):
+            if L[i] < R[j]:
+                arr[k] = L[i]
+                i+=1
+            else:
+                arr[k] = R[j]
+                j+=1
+            k+=1
+
+        # Checking if any element was left
+        while i < len(L):
+            arr[k] = L[i]
+            i+=1
+            k+=1
+
+        while j < len(R):
+            arr[k] = R[j]
+            j+=1
+            k+=1
+
+def order(a, b):
+    # need to order a and move b accordingly
+    # could map each entry in a with b
+    # this would assume no two values in b are equal, which is possible
+    map = []
+    for i in range(len(a)):
+        map.append([a[i], b[i]])
+
+    map = sorted(map)
+    k = 0
+    for i in map:
+        a[k] = i[0]
+        b[k] = i[1]
+        k += 1
+
+    return a, b
+
 
 def drawGraph(dataPoints, config):
 
@@ -138,6 +190,9 @@ def drawGraph(dataPoints, config):
     if numOfSplits > 1 or config[1]:
         for i in range(len(x)):
             if showlegend:
+                # order points so that plotted properly
+                x[i], y[i] = order(x[i], y[i])
+                print(len(x[i]))
                 sc.append(plt.plot(x[i], y[i], label=group[i]))
             else:
                 sc.append(plt.scatter(x[i], y[i], s=pointSize))
