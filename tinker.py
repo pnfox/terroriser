@@ -34,6 +34,7 @@ def findSplits(id):
                 if name:
                     name=name.group(1)
                     splits.append(name)
+    somFile.close()
     # output array or dictionary of options
     return splits
 
@@ -235,7 +236,7 @@ def okEvent():
             return
         else:
             url = parseTinyUrl(url)
-            if not url:
+            if url:
                 frame.label_message.set("Using raw url")
     # if we used somID textbox
     elif id:
@@ -247,13 +248,15 @@ def okEvent():
         if not somID:
             return
         frame.label_message.set("Graphing data for SOM: " + str(somID))
-        options = getOptions()
-        url = "http://rage/?p=som_data&id=" + str(somID) + options
+        url = "http://rage/?p=som_data&id=" + str(somID) + options + getOptions()
     else:
         frame.label_message.set("Nothing to graph")
         return
 
-    config = [frame.legend.get()]
+    config = [frame.legend.get(), 0]
+    if frame.branchList.curselection() or optionName == "branch":
+        config[1] = 1
+
     try:
         # start graphing
         p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
@@ -262,7 +265,8 @@ def okEvent():
         # TODO: catch process error code for better error logging
     except JSONDecodeError:
         frame.label_message.set("Failed to parse JSON")
-    except:
+    except e:
+        print(e)
         frame.label_message.set("Failed to graph")
     global tmpFiles
     if somID:

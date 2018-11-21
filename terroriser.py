@@ -1,12 +1,14 @@
 import os
 import re
 import json
+import operator
 import matplotlib.pyplot as plt
 
-points = None
+points = []
 nPoints = 0
 numOfSplits = 0
 axisPos = []
+splitNames = []
 xaxis = ""
 yaxis = ""
 
@@ -21,14 +23,19 @@ def json2points(f):
     xaxis = data.get("xaxis")
     yaxis = data.get("yaxis")
     global points
-    points = data.get("series")
-    points = points[0].get("data")
+    series = data.get("series")
+    for i in range(len(series)):
+         for p in series[i].get("data"):
+             points.append(p)
+
+    global splitNames
+    splitNames = list(points[0][2].keys())
     global numOfSplits
-    numOfSplits = len(points[0][2].keys())
-    print("numOfSplits: ", numOfSplits)
+    numOfSplits = len(splitNames)
+
     global axisPos
     for x in xaxis.split(","):
-        axisPos.append(list(points[0][2]).index(x))
+        axisPos.append(list(points[0][2].keys()).index(x))
 
     results = []
     # find split options in json
@@ -44,6 +51,23 @@ def json2points(f):
 
     # results = [xvalue, yvalue, option1, option2, ...]
     return results
+
+def order(a, b):
+    # need to order a and move b accordingly
+    # could map each entry in a with b
+    # this would assume no two values in b are equal, which is possible
+    map = []
+    for i in range(len(a)):
+        map.append([a[i], b[i]])
+
+    map = sorted(map)
+    k = 0
+    for i in map:
+        a[k] = i[0]
+        b[k] = i[1]
+        k += 1
+
+    return a, b
 
 def drawGraph(dataPoints, config):
 
@@ -89,6 +113,9 @@ def drawGraph(dataPoints, config):
         if event.inaxes == ax:
             k = 0
             for plots in sc:
+                # tmp fix for disabling annotations on line graphs
+                if type(plots) is list:
+                    return
                 cont, ind = plots.contains(event)
                 if cont:
                     update_annot(ind, k)
@@ -104,8 +131,9 @@ def drawGraph(dataPoints, config):
 
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
+    global splitNames
     x = []; y = []
-    if numOfSplits > 1:
+    if numOfSplits > 1 or config[1]:
         group = []
         global axisPos
         for p in dataPoints:
@@ -113,9 +141,9 @@ def drawGraph(dataPoints, config):
             s = ""
             for i in range(numOfSplits):
                 if i in axisPos:
-                    continue
-                else:
-                    s += p[i+2] + ","
+                    if config[1] == 0:
+                        continue
+                s += splitNames[i] + " " + p[i+2] + "\n"
             try:
                 position = group.index(s)
                 x[position].append(p[0])
@@ -133,12 +161,16 @@ def drawGraph(dataPoints, config):
     global nPoints
     pointSize=250/(nPoints)**0.35
     sc = []
-    if numOfSplits > 1:
+    # if we use splits or config[1] then color different plots
+    if numOfSplits > 1 or config[1]:
         for i in range(len(x)):
             if showlegend:
-                sc.append(plt.scatter(x[i], y[i], s=pointSize, label=group[i]))
+                # order points so that plotted properly
+                x[i], y[i] = order(x[i], y[i])
+                sc.append(plt.plot(x[i], y[i], label=group[i]))
             else:
                 sc.append(plt.scatter(x[i], y[i], s=pointSize))
+    # no color used
     else:
         sc.append(plt.scatter(x,y, s=pointSize))
     global xaxis; global yaxis
