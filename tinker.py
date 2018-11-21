@@ -98,46 +98,46 @@ class App():
     def __init__(self):
         self.content = ttk.Frame(root).grid(column=0,row=0)
         ttk.Style().theme_use('clam')
-        topFrame = ttk.Frame(self.content)
-        sideFrame = ttk.Frame(self.content)
+        rightFrame = ttk.Frame(self.content)
+        leftFrame = ttk.Frame(self.content)
         bottomFrame = ttk.Frame(self.content)
 
         self.somTypeSelected = StringVar()
         self.somTypeSelected.set(somTypes[0])
-        somTypesOption = OptionMenu(topFrame, self.somTypeSelected, *somTypes, command=self.getSelection).grid(column=0, row=0)
+        somTypesOption = OptionMenu(rightFrame, self.somTypeSelected, *somTypes, command=self.getSelection).grid(column=0, row=0)
 
         Label(topFrame, text="Double click on som\nto see split options").grid(column=1, row=0)
-        self.checkbar = CheckBar(topFrame, [])
+        self.checkbar = CheckBar(rightFrame, [])
         self.checkbar.grid(column=1, row=1, columnspan=2)
-        self.somListbox = Listbox(topFrame, exportselection=0, width=30)
+        self.somListbox = Listbox(rightFrame, exportselection=0, width=30)
         self.somListbox.grid(column=0, row=1, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
 
         self.splits = []
 
-        self.xaxisList = Listbox(topFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=5)
+        self.xaxisList = Listbox(rightFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=5)
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=2, sticky=W)
 
-        Label(sideFrame, text="SOM number\n(optional):").grid(column=0,row=0)
-        self.somNumber = Entry(sideFrame, bd=2)
+        Label(leftFrame, text="SOM number\n(optional):").grid(column=0,row=0)
+        self.somNumber = Entry(leftFrame, bd=2)
         self.somNumber.grid(column=1,row=0)
 
-        Label(sideFrame, text="URL\n(optional): ").grid(column=0, row=1)
-        self.url = Entry(sideFrame, bd=2)
+        Label(leftFrame, text="URL\n(optional): ").grid(column=0, row=1)
+        self.url = Entry(leftFrame, bd=2)
         self.url.grid(column=1, row=1)
 
-        splitsButton = ttk.Button(sideFrame, text="Update Splits", command=updateSplits)
+        splitsButton = ttk.Button(leftFrame, text="Update Splits", command=updateSplits)
         splitsButton.grid(column=1, row=2)
 
         self.label_message = StringVar()
         self.label_message.set("")
-        self.info_box = Label(topFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
+        self.info_box = Label(rightFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
         self.info_box.grid(column=0, row=3, sticky='NSWE')
 
-        Label(sideFrame, text="Show legend:").grid(column=0, row=3)
+        Label(leftFrame, text="Show legend:").grid(column=0, row=3)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(sideFrame, variable=self.legend, height=4, width=5)
+        self.legendOption = Checkbutton(leftFrame, variable=self.legend, height=4, width=5)
         self.legendOption.grid(column=1,row=3)
 
         resetButton = ttk.Button(bottomFrame, text="Reset", command=reset)
@@ -148,8 +148,8 @@ class App():
         resetButton.grid(column=1, row=0)
         cancelButton.grid(column=2,row=0)
 
-        topFrame.grid(column=0, row=0)
-        sideFrame.grid(column=1, row=0)
+        rightFrame.grid(column=0, row=0)
+        leftFrame.grid(column=1, row=0)
         bottomFrame.grid(column=0, row=1, columnspan=2)
 
     def onDouble(self, event):
@@ -184,10 +184,15 @@ def getOptions():
     return options
 
 def okEvent():
+    options = ""
     somID = None
     listSelected = frame.somListbox.curselection()
     url = frame.url.get()
     id = frame.somNumber.get()
+    if (url and id) or (id and listSelected) or (url and listSelected):
+        frame.label_message.set("Confused!\n More than one som number found")
+        return
+
     # parse xaxisList selection
     for i in frame.xaxisList.curselection():
         options += "&xaxis=" + frame.xaxisList.get(i)
@@ -214,6 +219,7 @@ def okEvent():
         options = getOptions()
         url = "http://rage/?p=som_data&id=" + str(somID) + options
     else:
+        frame.label_message.set("Nothing to graph")
         return
 
     config = [frame.legend.get()]
