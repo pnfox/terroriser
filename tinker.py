@@ -86,13 +86,21 @@ xaxis = {"branch": 0,
          "job_id": 5}
 somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow"]
 
+branches = ["master", "feature/honolulu/master", "boston"]
+
 # Inserts dict key,value pairs to a listbox
 def insertListOptions(lbox, dict):
     if lbox == None or dict == None:
         return
-    for k in dict.keys():
-        v = dict.get(k)
-        lbox.insert(v, k)
+    if type(dict) is type([]):
+        k = 0
+        for i in dict:
+            lbox.insert(k, i)
+            k += 1
+    else:
+        for k in dict.keys():
+            v = dict.get(k)
+            lbox.insert(v, k)
 
 class App():
     def __init__(self):
@@ -100,13 +108,14 @@ class App():
         ttk.Style().theme_use('clam')
         rightFrame = ttk.Frame(self.content)
         leftFrame = ttk.Frame(self.content)
+        middleFrame = ttk.Frame(self.content)
         bottomFrame = ttk.Frame(self.content)
 
         self.somTypeSelected = StringVar()
         self.somTypeSelected.set(somTypes[0])
         somTypesOption = OptionMenu(rightFrame, self.somTypeSelected, *somTypes, command=self.getSelection).grid(column=0, row=0)
 
-        Label(topFrame, text="Double click on som\nto see split options").grid(column=1, row=0)
+        Label(rightFrame, text="Double click on som\nto see split options").grid(column=1, row=0)
         self.checkbar = CheckBar(rightFrame, [])
         self.checkbar.grid(column=1, row=1, columnspan=2)
         self.somListbox = Listbox(rightFrame, exportselection=0, width=30)
@@ -140,6 +149,16 @@ class App():
         self.legendOption = Checkbutton(leftFrame, variable=self.legend, height=4, width=5)
         self.legendOption.grid(column=1,row=3)
 
+        Label(middleFrame, text="Branch:").grid(column=0,row=0)
+        self.branchList = Listbox(middleFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=3)
+        insertListOptions(self.branchList, branches)
+        self.branchList.grid(column=0, row=1)
+        Label(middleFrame, text="Other option:").grid(column=0, row=2)
+        self.optionName = Entry(middleFrame, bd=2)
+        self.optionValue = Entry(middleFrame, bd=2)
+        self.optionName.grid(column=1, row=2)
+        self.optionValue.grid(column=2, row=2)
+
         resetButton = ttk.Button(bottomFrame, text="Reset", command=reset)
         graphButton = ttk.Button(bottomFrame, text="Graph", command=okEvent)
         cancelButton = ttk.Button(bottomFrame, text="Quit", command=root.destroy)
@@ -150,7 +169,8 @@ class App():
 
         rightFrame.grid(column=0, row=0)
         leftFrame.grid(column=1, row=0)
-        bottomFrame.grid(column=0, row=1, columnspan=2)
+        middleFrame.grid(column=0, row=1, columnspan=2)
+        bottomFrame.grid(column=0, row=2, columnspan=2)
 
     def onDouble(self, event):
         tmpDict = soms.get(frame.somTypeSelected.get())
@@ -197,6 +217,17 @@ def okEvent():
     for i in frame.xaxisList.curselection():
         options += "&xaxis=" + frame.xaxisList.get(i)
 
+    for i in frame.branchList.curselection():
+        branch = frame.branchList.get(i).replace("/", "%2F")
+        options += "&v_branch=" + branch
+
+    optionName = frame.optionName.get()
+    optionValue = frame.optionValue.get()
+    if optionName and optionValue:
+        for i in optionValue.split(","):
+            i = i.replace("/", "%2F")
+            options += "&v_" + optionName + "=" + i
+
     if url:
         # we use url from url TextBox, check validation
         if not re.match(r'http://rage/\?(som|t)=', url):
@@ -209,7 +240,7 @@ def okEvent():
     # if we used somID textbox
     elif id:
         somID = id
-        url = "http://rage/?p=som_data&id=" + str(somID) + getOptions()
+        url = "http://rage/?p=som_data&id=" + str(somID) + getOptions() + options
     elif listSelected:
         tmpDict = soms.get(frame.somTypeSelected.get())
         somID = tmpDict.get(frame.somListbox.get(listSelected))
