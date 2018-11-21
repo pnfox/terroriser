@@ -8,6 +8,7 @@ points = []
 nPoints = 0
 numOfSplits = 0
 axisPos = []
+splitNames = []
 xaxis = ""
 yaxis = ""
 
@@ -26,8 +27,12 @@ def json2points(f):
     for i in range(len(series)):
          for p in series[i].get("data"):
              points.append(p)
+
+    global splitNames
+    splitNames = list(points[0][2].keys())
     global numOfSplits
-    numOfSplits = len(points[0][2].keys())
+    numOfSplits = len(splitNames)
+
     global axisPos
     for x in xaxis.split(","):
         axisPos.append(list(points[0][2].keys()).index(x))
@@ -126,6 +131,7 @@ def drawGraph(dataPoints, config):
 
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
+    global splitNames
     x = []; y = []
     if numOfSplits > 1 or config[1]:
         group = []
@@ -137,7 +143,7 @@ def drawGraph(dataPoints, config):
                 if i in axisPos:
                     if config[1] == 0:
                         continue
-                s += p[i+2] + ","
+                s += splitNames[i] + " " + p[i+2] + "\n"
             try:
                 position = group.index(s)
                 x[position].append(p[0])
