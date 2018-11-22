@@ -11,7 +11,7 @@ tmpFiles = []
 
 root = Tk()
 root.title("Terroriser")
-root.geometry("700x400")
+root.geometry("700x600")
 
 #
 # Finds the options that we can split by after tc_config_id
