@@ -51,6 +51,7 @@ def json2points(f):
     global splitNames
     splitNames = list(points[0][2].keys())
     global numOfSplits
+    global splitChoice
     numOfSplits = len(splitChoice)
 
     global axisPos
@@ -225,14 +226,27 @@ def analyseData(url, config):
     global splitChoice
     somID = re.search(r"id=(\d+)", url).group(1)
     splits = re.findall(r'&f_(\w+)=1', url)
-    for i in splits:
-        splitChoice.append(i)
     if splits:
-        config[1] = 1
+        for i in splits:
+            splitChoice.append(i)
+            config[1] = 1
+    # no splits from gui so default splits
+    else:
+        splitChoice = ['branch']
+
     # catch exception that wget fails (or maybe rage unavailable)
     if os.name == "posix":
         os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
+    if os.name == "nt":
+        response = requests.get(str(url))
+        response.raise_for_status()
+        with open("somdata" + str(somID)) as h:
+            for block in response.iter_count(1024):
+                h.write(block)
     print("Fetched data")
-    raw = open("/tmp/somdata" + str(somID))
+    if os.name == "posix":
+        raw = open("/tmp/somdata" + str(somID))
+    if os.name == "nt":
+        raw = open("somdata" + str(somID))
     points = json2points(raw)
     drawGraph(points, config)

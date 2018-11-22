@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 import os
 import re
+import requests
 from multiprocessing import Process
 from json import JSONDecodeError
 
@@ -19,6 +20,14 @@ root.geometry("700x600")
 def findSplits(id):
     if os.name == "posix":
         os.system("wget -q http://rage/?som=" + str(id) + " -O /tmp/som" + str(id))
+    if os.name == "nt":
+        response = requests.get("http://rage/?som=" + str(id))
+        response.raise_for_status()
+
+        with open("som" + str(id), "wb") as h:
+            for block in response.iter_content(1024):
+                h.write(block)
+
     global tmpFiles
     tmpFiles.append("/tmp/som"+str(id))
     # analyse html output to find which options are available for splitting
