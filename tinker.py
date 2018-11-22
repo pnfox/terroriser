@@ -14,10 +14,7 @@ root = Tk()
 root.title("Terroriser")
 root.geometry("700x600")
 
-#
-# Finds the options that we can split by after tc_config_id
-#
-def findSplits(id):
+def getRagePage(id):
     if os.name == "posix":
         os.system("wget -q http://rage/?som=" + str(id) + " -O /tmp/som" + str(id))
     if os.name == "nt":
@@ -29,9 +26,21 @@ def findSplits(id):
                 h.write(block)
 
     global tmpFiles
-    tmpFiles.append("/tmp/som"+str(id))
     # analyse html output to find which options are available for splitting
-    somFile = open("/tmp/som"+str(id))
+    if os.name == "posix":
+        tmpFiles.append("/tmp/som"+str(id))
+        somFile = open("/tmp/som"+str(id))
+    if os.name == "nt":
+        somFile = open("som" + str(id))
+
+    return somFile
+
+#
+# Finds the options that we can split by after tc_config_id
+#
+def findSplits(id):
+    somFile = getRagePage(id)
+
     splits = []
     tcConfigFound = False
     for line in somFile:
@@ -47,6 +56,24 @@ def findSplits(id):
     somFile.close()
     # output array or dictionary of options
     return splits
+
+def findBranches(id):
+    somFile = getRagePage(id)
+
+    branches = []
+    branchFound = False
+    for line in somFile:
+        if "name=\'v_branch\'" in line:
+            branchFound = True
+        elif "</select" in line:
+            branchFound = False
+        elif branchFound:
+            if "<option" in line:
+                v = re.match(r'<option value=\'(\w+)\'', line)
+                if v:
+                    v = v.group(1)
+                    branches.append(v)
+    return branches
 
 class CheckBar(Frame):
     def __init__(self, parent=None, picks=[], side=LEFT, anchor=W):
@@ -106,8 +133,6 @@ xaxis = {"branch": 0,
          "job_id": 5}
 somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow"]
 
-branches = ["master", "feature/honolulu/master", "boston"]
-
 # Inserts dict key,value pairs to a listbox
 def insertListOptions(lbox, dict):
     if lbox == None or dict == None:
@@ -161,7 +186,7 @@ class App():
         self.url = Entry(leftFrame, bd=2)
         self.url.grid(column=1, row=1)
 
-        splitsButton = ttk.Button(leftFrame, text="Update Splits", command=updateSplits)
+        splitsButton = ttk.Button(leftFrame, text="Update GUI", command=updateSplits)
         splitsButton.grid(column=1, row=2)
 
         self.label_message = StringVar()
@@ -180,7 +205,7 @@ class App():
 
         Label(middleFrame, text="Branch:").grid(column=0,row=0)
         self.branchList = Listbox(middleFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=3)
-        insertListOptions(self.branchList, branches)
+        insertListOptions(self.branchList, [])
         self.branchList.grid(column=0, row=1)
         Label(middleFrame, text="Other option:").grid(column=0, row=2)
         self.optionName = Entry(middleFrame, bd=2)
@@ -316,13 +341,15 @@ def updateSplits():
             somID = tmp.group(1)
         elif tmp2:
             somID = re.search(r'&id=(\d+)', parseTinyUrl(urlTextInput)).group(1)
-
+    else:
+        frame.label_message.set("Could not update splits")
+        return
     frame.splits = findSplits(somID)
+    print(findBranches(somID))
+    insertListOptions(frame.branchList, findBranches(somID))
     if frame.splits:
         frame.checkbar.clear()
         frame.checkbar.update(frame.splits)
-    else:
-        frame.label_message.set("Could not update splits")
 
 def parseTinyUrl(url):
     curl = ""
