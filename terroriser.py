@@ -13,6 +13,25 @@ splitChoice = []
 xaxis = ""
 yaxis = ""
 
+def initialize():
+    global points
+    global nPoints
+    global numOfSplits
+    global axisPos
+    global splitNames
+    global splitChoice
+    global xaxis
+    global yaxis
+    points = []
+    nPoints = 0
+    numOfSplits = 0
+    axisPos = []
+    splitNames = []
+    splitChoice = []
+    xaxis = ""
+    yaxis = ""
+
+
 def json2points(f):
     json_data=f.read()
     # will return exception when cant parse json
@@ -138,15 +157,17 @@ def drawGraph(dataPoints, config):
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
     global splitNames
-    x = []; y = []
+    x = []; y = []; group = []
     if numOfSplits > 1 or config[1]:
-        group = []
         global axisPos
         for p in dataPoints:
             # collect different x,y's of each split value, excluding xaxis
             s = ""
             for i in range(numOfSplits):
                 if i in axisPos:
+                    # if we used branch list (assuming this is also xaxis value)
+                    # or we branch was other option field
+                    # then dont continue as we want to color different branches
                     if config[1] == 0:
                         continue
                 s += p[i+2] + "\n"
@@ -173,12 +194,21 @@ def drawGraph(dataPoints, config):
             if showlegend:
                 # order points so that plotted properly
                 x[i], y[i] = order(x[i], y[i])
-                sc.append(plt.plot(x[i], y[i], label=group[i]))
+                if config[2] == 1:
+                    sc.append(plt.plot(x[i], y[i], label=group[i]))
+                else:
+                    sc.append(plt.scatter(x[i], y[i], label=group[i]))
             else:
-                sc.append(plt.scatter(x[i], y[i], s=pointSize))
+                if config[2] == 1:
+                    sc.append(plt.plot(x[i], y[i]))
+                else:
+                    sc.append(plt.scatter(x[i], y[i], s=pointSize))
     # no color used
     else:
-        sc.append(plt.scatter(x,y, s=pointSize))
+        if config[2] == 1:
+            sc.append(plt.plot(x,y))
+        else:
+            sc.append(plt.scatter(x,y, s=pointSize))
     global xaxis; global yaxis
     plt.xlabel(xaxis)
     plt.ylabel(yaxis)
@@ -190,14 +220,19 @@ def drawGraph(dataPoints, config):
     fig.canvas.mpl_disconnect(cid)
 
 def analyseData(url, config):
+
+    initialize()
     global splitChoice
     somID = re.search(r"id=(\d+)", url).group(1)
     splits = re.findall(r'&f_(\w+)=1', url)
     for i in splits:
         splitChoice.append(i)
+    if splits:
+        config[1] = 1
     # catch exception that wget fails (or maybe rage unavailable)
-    os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
-    print("Fetched data from " + url)
+    if os.name == "posix":
+        os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
+    print("Fetched data")
     raw = open("/tmp/somdata" + str(somID))
     points = json2points(raw)
     drawGraph(points, config)
