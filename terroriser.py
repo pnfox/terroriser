@@ -9,6 +9,7 @@ nPoints = 0
 numOfSplits = 0
 axisPos = []
 splitNames = []
+splitChoice = []
 xaxis = ""
 yaxis = ""
 
@@ -31,11 +32,12 @@ def json2points(f):
     global splitNames
     splitNames = list(points[0][2].keys())
     global numOfSplits
-    numOfSplits = len(splitNames)
+    numOfSplits = len(splitChoice)
 
     global axisPos
     for x in xaxis.split(","):
-        axisPos.append(list(points[0][2].keys()).index(x))
+        if list(points[0][2].keys()).index(x):
+            axisPos.append(list(points[0][2].keys()).index(x))
 
     results = []
     # find split options in json
@@ -43,9 +45,13 @@ def json2points(f):
     for i in points:
         results.append([i[0], i[1]])
         dict = i[2]
-        for v in dict.values():
-            results[j].append(v)
-        j += 1
+        if not splitChoice:
+            for v in dict.values():
+                results[j].append(v)
+        else:
+            for split in splitChoice:
+                results[j].append(dict.get(split))
+        j = j + 1
     global nPoints
     nPoints = j
 
@@ -143,7 +149,7 @@ def drawGraph(dataPoints, config):
                 if i in axisPos:
                     if config[1] == 0:
                         continue
-                s += splitNames[i] + " " + p[i+2] + "\n"
+                s += p[i+2] + "\n"
             try:
                 position = group.index(s)
                 x[position].append(p[0])
@@ -184,7 +190,11 @@ def drawGraph(dataPoints, config):
     fig.canvas.mpl_disconnect(cid)
 
 def analyseData(url, config):
+    global splitChoice
     somID = re.search(r"id=(\d+)", url).group(1)
+    splits = re.findall(r'&f_(\w+)=1', url)
+    for i in splits:
+        splitChoice.append(i)
     # catch exception that wget fails (or maybe rage unavailable)
     os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
     print("Fetched data from " + url)
