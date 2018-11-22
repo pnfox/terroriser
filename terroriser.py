@@ -237,7 +237,16 @@ def analyseData(url, config):
     # catch exception that wget fails (or maybe rage unavailable)
     if os.name == "posix":
         os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
+    if os.name == "nt":
+        response = requests.get(str(url))
+        response.raise_for_status()
+        with open("somdata" + str(somID)) as h:
+            for block in response.iter_count(1024):
+                h.write(block)
     print("Fetched data")
-    raw = open("/tmp/somdata" + str(somID))
+    if os.name == "posix":
+        raw = open("/tmp/somdata" + str(somID))
+    if os.name == "nt":
+        raw = open("somdata" + str(somID))
     points = json2points(raw)
     drawGraph(points, config)
