@@ -17,7 +17,8 @@ root.geometry("700x600")
 # Finds the options that we can split by after tc_config_id
 #
 def findSplits(id):
-    os.system("wget -q http://rage/?som=" + str(id) + " -O /tmp/som" + str(id))
+    if os.name == "posix":
+        os.system("wget -q http://rage/?som=" + str(id) + " -O /tmp/som" + str(id))
     global tmpFiles
     tmpFiles.append("/tmp/som"+str(id))
     # analyse html output to find which options are available for splitting
@@ -72,8 +73,17 @@ apache = {"Apachebench measurement (per client)" : 308,
           "Apachebench measurements (max across requests)" : 465}
 blackw = {"HTTP throughput" : 476,
               "HTTP throughput (mean over time)" : 477,
+              "HTTP end-to-end" : 479,
+              "HTTP end-to-end" : 480,
               "DNS req/sec" : 495,
-              "DNS req/sec (mean over time)" : 496}
+              "DNS req/sec (mean over time)" : 496,
+              "SSL encrypted throughput" : 483,
+              "SSL encrypted throughput (mean)" : 484,
+              "SSL TPS" : 486,
+              "SSL TPS (mean)" : 487,
+              "TCP Conn/sec" : 481,
+              "TCP Conn/sec (mean)" : 482}
+
 
 soms = {"VM clone" : vmclone,
         "Active Directory operations" : actDir,
@@ -122,6 +132,11 @@ class App():
         self.somListbox = Listbox(rightFrame, exportselection=0, width=30)
         self.somListbox.grid(column=0, row=1, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
+        #scrollbar = Scrollbar(rightFrame,orient="vertical", width=20)
+        #scrollbar.grid(column=0,row=1, sticky=E)
+        #scrollbar.config(command=self.somListbox.yview)
+        #self.somListbox.config(yscrollcommand=scrollbar.set)
+
 
         self.splits = []
 
@@ -147,8 +162,12 @@ class App():
 
         Label(leftFrame, text="Show legend:").grid(column=0, row=3)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(leftFrame, variable=self.legend, height=4, width=5)
+        self.legendOption = Checkbutton(leftFrame, variable=self.legend)
         self.legendOption.grid(column=1,row=3)
+
+        Label(leftFrame, text="Line plot: ").grid(column=0, row=4)
+        self.linePlot = IntVar()
+        line = Checkbutton(leftFrame, variable=self.linePlot).grid(column=1, row=4)
 
         Label(middleFrame, text="Branch:").grid(column=0,row=0)
         self.branchList = Listbox(middleFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=3)
@@ -200,7 +219,7 @@ def getOptions():
     for state in checkbarStates:
         if state.get() == 1:
             # checkbox has been ticked
-            options += "&f_" + frame.splits[j]
+            options += "&f_" + frame.splits[j] + "=1"
         j = j + 1
     return options
 
@@ -218,10 +237,12 @@ def okEvent():
     for i in frame.xaxisList.curselection():
         options += "&xaxis=" + frame.xaxisList.get(i)
 
+    # parse branch listbox
     for i in frame.branchList.curselection():
         branch = frame.branchList.get(i).replace("/", "%2F")
         options += "&v_branch=" + branch
 
+    # parse other option textbox fields
     optionName = frame.optionName.get()
     optionValue = frame.optionValue.get()
     if optionName and optionValue:
@@ -235,7 +256,7 @@ def okEvent():
             frame.label_message.set("Invalid url provided")
             return
         else:
-            url = parseTinyUrl(url)
+            url = parseTinyUrl(url) + getOptions()
             if url:
                 frame.label_message.set("Using raw url")
     # if we used somID textbox
@@ -253,7 +274,7 @@ def okEvent():
         frame.label_message.set("Nothing to graph")
         return
 
-    config = [frame.legend.get(), 0]
+    config = [frame.legend.get(), 0, frame.linePlot.get()]
     if frame.branchList.curselection() or optionName == "branch":
         config[1] = 1
 
@@ -285,7 +306,7 @@ def updateSplits():
         if tmp:
             somID = tmp.group(1)
         elif tmp2:
-            somID = parseTinyUrl(url)
+            somID = re.search(r'&id=(\d+)', parseTinyUrl(urlTextInput)).group(1)
 
     frame.splits = findSplits(somID)
     if frame.splits:
@@ -307,7 +328,8 @@ def parseTinyUrl(url):
         newUrl = "http://rage/?p=som_data&id=" + str(somID) + otherthings
     if t:
         index = 0
-        output = os.popen("curl -sL " + url).read().split("%")
+        if os.name == "posix":
+            output = os.popen("curl -sL " + url).read().split("%")
         somID = output[3][2:]
         for i in output[3:]:
             i = i[2:].split("'")[0]
@@ -326,11 +348,14 @@ def parseTinyUrl(url):
 def cleanup():
     for file in tmpFiles:
         try:
-            os.system("rm -f " + file)
+            if os.name == "posix":
+                os.system("rm -f " + file)
         except:
             print("Failed to remove " + file)
 
 if __name__=="__main__":
+
+    assert sys.version_info >= (3,0)
     frame = App()
     root.mainloop()
     cleanup()
