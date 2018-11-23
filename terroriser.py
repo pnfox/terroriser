@@ -224,6 +224,7 @@ def analyseData(url, config):
 
     initialize()
     global splitChoice
+    print(url)
     somID = re.search(r"id=(\d+)", url).group(1)
     splits = re.findall(r'&f_(\w+)=1', url)
     if splits:

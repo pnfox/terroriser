@@ -290,9 +290,12 @@ def okEvent():
             frame.label_message.set("Invalid url provided")
             return
         else:
-            url = parseTinyUrl(url) + getOptions()
+            url = parseTinyUrl(url)
             if url:
                 frame.label_message.set("Using raw url")
+            else:
+                return
+            url = url + getOptions()
     # if we used somID textbox
     elif id:
         somID = id
@@ -319,6 +322,7 @@ def okEvent():
         p.join()
         # TODO: catch process error code for better error logging
     except JSONDecodeError:
+        print(JSONDecodeError)
         frame.label_message.set("Failed to parse JSON")
     except e:
         print(e)
@@ -340,12 +344,16 @@ def updateSplits():
         if tmp:
             somID = tmp.group(1)
         elif tmp2:
-            somID = re.search(r'&id=(\d+)', parseTinyUrl(urlTextInput)).group(1)
+            somID = re.search(r'&id=(\d+)', parseTinyUrl(urlTextInput))
+            if somID:
+                somID = somID.group(1)
+            else:
+                frame.label_message.set("Could not update splits")
+                return
     else:
         frame.label_message.set("Could not update splits")
         return
     frame.splits = findSplits(somID)
-    print(findBranches(somID))
     insertListOptions(frame.branchList, findBranches(somID))
     if frame.splits:
         frame.checkbar.clear()
@@ -354,6 +362,8 @@ def updateSplits():
 def parseTinyUrl(url):
     curl = ""
     t = None
+    location = 0
+    failed = False
     tmp = re.search(r'rage/\?t=(\d+)$', url)
     if tmp:
         t = tmp.group(1)
@@ -366,8 +376,14 @@ def parseTinyUrl(url):
         index = 0
         if os.name == "posix":
             output = os.popen("curl -sL " + url).read().split("%")
-        somID = output[3][2:]
-        for i in output[3:]:
+        for i in range(len(output)):
+            if "som" in output[i]:
+                location = i+1
+                break
+            if "this is not the page you are looking for" in output[i]:
+                failed = True
+        somID = output[location][2:]
+        for i in output[location:]:
             i = i[2:].split("'")[0]
             curl += i
             if index % 2 == 0:
@@ -376,7 +392,7 @@ def parseTinyUrl(url):
                 curl += "="
             index += 1
         newUrl = "http://rage/?p=som_data&id=" + curl
-    elif not somID:
+    if failed:
         frame.label_message.set("Invalid url provided")
         return None
     return newUrl
