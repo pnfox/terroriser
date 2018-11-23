@@ -44,6 +44,9 @@ def json2points(f):
     yaxis = data.get("yaxis")
     global points
     series = data.get("series")
+    if not series:
+        return None
+
     for i in range(len(series)):
          for p in series[i].get("data"):
              points.append(p)
@@ -250,4 +253,6 @@ def analyseData(url, config):
     if os.name == "nt":
         raw = open("somdata" + str(somID))
     points = json2points(raw)
+    if not points:
+        return None
     drawGraph(points, config)
