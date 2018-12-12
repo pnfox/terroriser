@@ -393,6 +393,15 @@ def parseTinyUrl(url):
                 index += 1
                 curl += i
                 continue
+            if i[:2] == "3A":
+                curl += ":" + i[2:]
+                continue
+            if i[:2] == "2F":
+                curl += "/" + i[2:]
+                continue
+            if i[:2] == "23":
+                curl += "#" + i[2:].split("'")[0]
+                continue
 
             i = i[2:].split("'")[0]
             if j % 2 == 0:
