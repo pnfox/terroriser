@@ -321,9 +321,11 @@ def okEvent():
         p.start()
         p.join()
         # TODO: catch process error code for better error logging
-    except JSONDecodeError:
-        print(JSONDecodeError)
+    except JSONDecodeError as e:
+        print(e)
         frame.label_message.set("Failed to parse JSON")
+    except terroriser.TerroriserError as e:
+        frame.label_message.set(e)
     except e:
         print(e)
         frame.label_message.set("Failed to graph")

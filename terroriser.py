@@ -31,9 +31,14 @@ def initialize():
     xaxis = ""
     yaxis = ""
 
+class TerroriserError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 def json2points(f):
     json_data=f.read()
+    if len(json_data.split()) == 0:
+        raise TerroriserError("No data found")
     # will return exception when cant parse json
     # data is a python dict
     data = json.loads(json_data)
