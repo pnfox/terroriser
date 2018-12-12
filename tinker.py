@@ -321,9 +321,11 @@ def okEvent():
         p.start()
         p.join()
         # TODO: catch process error code for better error logging
-    except JSONDecodeError:
-        print(JSONDecodeError)
+    except JSONDecodeError as e:
+        print(e)
         frame.label_message.set("Failed to parse JSON")
+    except terroriser.TerroriserError as e:
+        frame.label_message.set(e)
     except e:
         print(e)
         frame.label_message.set("Failed to graph")
@@ -383,15 +385,33 @@ def parseTinyUrl(url):
             if "this is not the page you are looking for" in output[i]:
                 failed = True
         somID = output[location][2:]
-        for i in output[location:]:
+
+        j = 0
+        for i in output[location:len(output)]:
+            if "252F" in i or "253D" in i:
+                i = i.replace("25", "%")
+                index += 1
+                curl += i
+                continue
+            if i[:2] == "3A":
+                curl += ":" + i[2:]
+                continue
+            if i[:2] == "2F":
+                curl += "/" + i[2:]
+                continue
+            if i[:2] == "23":
+                curl += "#" + i[2:].split("'")[0]
+                continue
+
             i = i[2:].split("'")[0]
-            curl += i
-            if index % 2 == 0:
-                curl += "&"
-            else:
+            if j % 2 == 0:
                 curl += "="
+            else:
+                curl += "&"
+            curl += i
             index += 1
-        newUrl = "http://rage/?p=som_data&id=" + curl
+            j += 1
+        newUrl = "http://rage/?p=som_data&id" + curl
     if failed:
         frame.label_message.set("Invalid url provided")
         return None
