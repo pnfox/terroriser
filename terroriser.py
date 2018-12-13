@@ -2,6 +2,7 @@ import os
 import re
 import json
 import operator
+import subprocess
 import matplotlib.pyplot as plt
 
 points = []
@@ -12,6 +13,7 @@ splitNames = []
 splitChoice = []
 xaxis = ""
 yaxis = ""
+som_name = ""
 
 def initialize():
     global points
@@ -225,6 +227,8 @@ def drawGraph(dataPoints, config):
 
     if showlegend:
         plt.legend()
+    global som_name
+    plt.title(som_name)
     plt.show()
     fig.canvas.mpl_disconnect(cid)
 
@@ -260,4 +264,13 @@ def analyseData(url, config):
     points = json2points(raw)
     if not points:
         return None
+
+    # Get som name
+    if os.name == "posix":
+        p1 = subprocess.Popen(["curl", "-s", "http://rage/?som=" + str(somID)], stdout=subprocess.PIPE)
+        p2 = subprocess.Popen(["grep", "som_name"], stdin=p1.stdout, stdout=subprocess.PIPE)
+        p1.stdout.close()
+        o = p2.communicate()[0]
+        global som_name
+        som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
     drawGraph(points, config)
