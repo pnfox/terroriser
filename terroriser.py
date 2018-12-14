@@ -62,12 +62,17 @@ def json2points(f):
     splitNames = list(points[0][2].keys())
     global numOfSplits
     global splitChoice
+    # splitChoice contains the values of &f_(\w+)= in the url 
     numOfSplits = len(splitChoice)
 
     global axisPos
+    # xaxis branch is selected by user but
+    # position of branch values in points.keys() is undetermined
+    # this finds the position, we need this later
     for x in xaxis.split(","):
-        if list(points[0][2].keys()).index(x):
-            axisPos.append(list(points[0][2].keys()).index(x))
+        position = list(points[0][2].keys()).index(x)
+        if position:
+            axisPos.append(position)
 
     results = []
     # find split options in json
@@ -88,10 +93,11 @@ def json2points(f):
     # results = [xvalue, yvalue, option1, option2, ...]
     return results
 
+# Used to order two arrays a, b when each entry in both
+# corresponds to a pair (a[0] is with b[0], etc...)
+# orders based on a in ascending order
+# returns ordered arrays a, b
 def order(a, b):
-    # need to order a and move b accordingly
-    # could map each entry in a with b
-    # this would assume no two values in b are equal, which is possible
     map = []
     for i in range(len(a)):
         map.append([a[i], b[i]])
@@ -105,6 +111,9 @@ def order(a, b):
 
     return a, b
 
+# Given the dataPoints which contains cartesian positions and
+# also contains split configuration. Config contains user
+# input on how he/she wishes the graphs to be drawn
 def drawGraph(dataPoints, config):
 
     showlegend = config[0]
@@ -232,6 +241,8 @@ def drawGraph(dataPoints, config):
     plt.show()
     fig.canvas.mpl_disconnect(cid)
 
+# Main entry point when being called from tinker.py
+# parses the json file then plots graph
 def analyseData(url, config):
 
     initialize()
@@ -273,4 +284,6 @@ def analyseData(url, config):
         o = p2.communicate()[0]
         global som_name
         som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
+
+    # Start drawing
     drawGraph(points, config)
