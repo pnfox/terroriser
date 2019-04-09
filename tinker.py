@@ -297,7 +297,7 @@ def okEvent():
                 return
             url = url + getOptions()
     # if we used somID textbox
-    elif id:
+    elif id and isinstance(id, int):
         somID = id
         url = "http://rage/?p=som_data&id=" + str(somID) + getOptions() + options
     elif listSelected:
