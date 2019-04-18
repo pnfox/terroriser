@@ -160,6 +160,7 @@ def drawGraph(dataPoints, config):
             for p in range(len(x)):
                 if x[p] == pos[0] and y[p] == pos[1]:
                     text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
+                    text += printInformation(p)
                     break
         annot.set_text(text)
         annot.get_bbox_patch().set_alpha(0.2)
