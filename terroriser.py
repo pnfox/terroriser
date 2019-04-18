@@ -2,6 +2,7 @@ import os
 import re
 import json
 import operator
+import subprocess
 import matplotlib.pyplot as plt
 
 points = []
@@ -12,14 +13,17 @@ splitNames = []
 splitChoice = []
 xaxis = ""
 yaxis = ""
+som_name = ""
 
 def initialize():
     global points
+    global pointInformation
     global nPoints
     global numOfSplits
     global axisPos
     global splitNames
     global splitChoice
+    global xaxisChoice
     global xaxis
     global yaxis
     points = []
@@ -60,19 +64,28 @@ def json2points(f):
     splitNames = list(points[0][2].keys())
     global numOfSplits
     global splitChoice
+    # splitChoice contains the values of &f_(\w+)= in the url 
     numOfSplits = len(splitChoice)
 
     global axisPos
+    # xaxis branch is selected by user but
+    # position of branch values in points.keys() is undetermined
+    # this finds the position, we need this later
     for x in xaxis.split(","):
-        if list(points[0][2].keys()).index(x):
-            axisPos.append(list(points[0][2].keys()).index(x))
+        position = list(points[0][2].keys()).index(x)
+        if position:
+            axisPos.append(position)
 
     results = []
+    global pointInformation
+    pointInformation = []
     # find split options in json
     j = 0
     for i in points:
-        results.append([i[0], i[1]])
+        results.append([j, i[0], i[1]])
         dict = i[2]
+        pointInformation.append([j, dict.values()])
+        # Add the splitByIdentifier, used later to determine color
         if not splitChoice:
             for v in dict.values():
                 results[j].append(v)
@@ -83,16 +96,21 @@ def json2points(f):
     global nPoints
     nPoints = j
 
-    # results = [xvalue, yvalue, option1, option2, ...]
+    # results = [xvalue, yvalue, splitByIdentifier]
     return results
 
+# Used to order two arrays a, b when each entry in both
+# corresponds to a pair (a[0] is with b[0], etc...)
+# orders based on a in ascending order
+# returns ordered arrays a, b
 def order(a, b):
-    # need to order a and move b accordingly
-    # could map each entry in a with b
-    # this would assume no two values in b are equal, which is possible
     map = []
-    for i in range(len(a)):
-        map.append([a[i], b[i]])
+    lenA = len(a)
+    if lenA > 1:
+        for i in range(lenA):
+            map.append([a[i], b[i]])
+    else:
+        map.append([a,b])
 
     map = sorted(map)
     k = 0
@@ -103,6 +121,9 @@ def order(a, b):
 
     return a, b
 
+# Given the dataPoints which contains cartesian positions and
+# also contains split configuration. Config contains user
+# input on how he/she wishes the graphs to be drawn
 def drawGraph(dataPoints, config):
 
     showlegend = config[0]
@@ -128,19 +149,40 @@ def drawGraph(dataPoints, config):
                 s += len(i)
 
             for p in range(len(x[plotIndex])):
-                if x[plotIndex][p] == pos[0] and y[plotIndex][p] == pos[1]:
+                if x[plotIndex][p][1] == pos[0] and y[plotIndex][p][1] == pos[1]:
                     # FIX: p doesn't point to same point in x and dataPoints
                     # fix with this p = len(x[plotIndex]) + p
-                    text = "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n" + str(dataPoints[s+p][2])
+                    text = "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
+                    pointID = x[plotIndex][p][0]
+                    text += printInformation(pointID)
                     break
         else:
-            for p in dataPoints:
-                if p[0] == pos[0] and p[1] == pos[1]:
-                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n" + str(p[2])
+            for p in range(len(x)):
+                if x[p] == pos[0] and y[p] == pos[1]:
+                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
+                    text += printInformation(p)
                     break
         annot.set_text(text)
         annot.get_bbox_patch().set_alpha(0.2)
 
+    def printInformation(ID):
+        global pointInformation
+        global xaxisChoice
+        # pointInformation = [[pointID, infoArray], [pointID, infoArray], ...]
+
+        # find the point
+        for i in pointInformation:
+            if i[0] == ID:
+                info = i[1]
+
+        string = ""
+        # parse the info
+        info = list(info)
+        xaxisChoice.reverse()
+        for i in range(len(xaxisChoice)):
+            string += xaxisChoice[i] + ": " + info[i] + "\n"
+
+        return string
 
     def onclick(event):
         vis = annot.get_visible()
@@ -171,6 +213,7 @@ def drawGraph(dataPoints, config):
         global axisPos
         for p in dataPoints:
             # collect different x,y's of each split value, excluding xaxis
+            # s will be the str concat of all splitIndentifies from json2points()
             s = ""
             for i in range(numOfSplits):
                 if i in axisPos:
@@ -179,11 +222,11 @@ def drawGraph(dataPoints, config):
                     # then dont continue as we want to color different branches
                     if config[1] == 0:
                         continue
-                s += p[i+2] + "\n"
+                s += p[i+3] + "\n"
             try:
                 position = group.index(s)
-                x[position].append(p[0])
-                y[position].append(p[1])
+                x[position].append((p[0], p[1]))
+                y[position].append((p[0], p[2]))
             except:
                 # didnt match
                 group.append(s)
@@ -191,8 +234,8 @@ def drawGraph(dataPoints, config):
 
     elif numOfSplits == 1:
         for p in dataPoints:
-            x.append(p[0])
-            y.append(p[1])
+            x.append(p[1])
+            y.append(p[2])
 
     global nPoints
     pointSize=250/(nPoints)**0.35
@@ -200,18 +243,28 @@ def drawGraph(dataPoints, config):
     # if we use splits or config[1] then color different plots
     if numOfSplits > 1 or config[1]:
         for i in range(len(x)):
+
+            # order points so that plotted properly
+            # tmpX and tmpY arrays will contain only floating points
+            # of both dependent and indenpendent variables
+            tmpX = []; tmpY = []
+            lenX = len(x[i]); lenY = len(y[i])
+            assert(lenX == lenY)
+            for k in range(lenX):
+                tmpX.append(x[i][k][1])
+                tmpY.append(y[i][k][1])
+            tmpX, tmpY = order(tmpX, tmpY)
+
             if showlegend:
-                # order points so that plotted properly
-                x[i], y[i] = order(x[i], y[i])
                 if config[2] == 1:
-                    sc.append(plt.plot(x[i], y[i], label=group[i]))
+                    sc.append(plt.plot(tmpX, tmpY, label=group[i]))
                 else:
-                    sc.append(plt.scatter(x[i], y[i], label=group[i]))
+                    sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
             else:
                 if config[2] == 1:
-                    sc.append(plt.plot(x[i], y[i]))
+                    sc.append(plt.plot(tmpX, tmpY))
                 else:
-                    sc.append(plt.scatter(x[i], y[i], s=pointSize))
+                    sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
     # no color used
     else:
         if config[2] == 1:
@@ -225,9 +278,13 @@ def drawGraph(dataPoints, config):
 
     if showlegend:
         plt.legend()
+    global som_name
+    plt.title(som_name)
     plt.show()
     fig.canvas.mpl_disconnect(cid)
 
+# Main entry point when being called from tinker.py
+# parses the json file then plots graph
 def analyseData(url, config):
 
     initialize()
@@ -242,6 +299,9 @@ def analyseData(url, config):
     # no splits from gui so default splits
     else:
         splitChoice = ['branch']
+
+    global xaxisChoice
+    xaxisChoice = re.findall(r'xaxis=(\w+)', url)
 
     # catch exception that wget fails (or maybe rage unavailable)
     if os.name == "posix":
@@ -260,4 +320,15 @@ def analyseData(url, config):
     points = json2points(raw)
     if not points:
         return None
+
+    # Get som name
+    if os.name == "posix":
+        p1 = subprocess.Popen(["curl", "-s", "http://rage/?som=" + str(somID)], stdout=subprocess.PIPE)
+        p2 = subprocess.Popen(["grep", "som_name"], stdin=p1.stdout, stdout=subprocess.PIPE)
+        p1.stdout.close()
+        o = p2.communicate()[0]
+        global som_name
+        som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
+
+    # Start drawing
     drawGraph(points, config)
