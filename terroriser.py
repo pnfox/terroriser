@@ -17,11 +17,13 @@ som_name = ""
 
 def initialize():
     global points
+    global pointInformation
     global nPoints
     global numOfSplits
     global axisPos
     global splitNames
     global splitChoice
+    global xaxisChoice
     global xaxis
     global yaxis
     points = []
@@ -75,11 +77,14 @@ def json2points(f):
             axisPos.append(position)
 
     results = []
+    global pointInformation
+    pointInformation = []
     # find split options in json
     j = 0
     for i in points:
         results.append([j, i[0], i[1]])
         dict = i[2]
+        pointInformation.append([j, dict.values()])
         # Add the splitByIdentifier, used later to determine color
         if not splitChoice:
             for v in dict.values():
@@ -144,19 +149,39 @@ def drawGraph(dataPoints, config):
                 s += len(i)
 
             for p in range(len(x[plotIndex])):
-                if x[plotIndex][p] == pos[0] and y[plotIndex][p] == pos[1]:
+                if x[plotIndex][p][1] == pos[0] and y[plotIndex][p][1] == pos[1]:
                     # FIX: p doesn't point to same point in x and dataPoints
                     # fix with this p = len(x[plotIndex]) + p
                     text = "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
+                    pointID = x[plotIndex][p][0]
+                    text += printInformation(pointID)
                     break
         else:
-            for p in dataPoints:
-                if p[0] == pos[0] and p[1] == pos[1]:
-                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n" + str(p[2])
+            for p in range(len(x)):
+                if x[p] == pos[0] and y[p] == pos[1]:
+                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
                     break
         annot.set_text(text)
         annot.get_bbox_patch().set_alpha(0.2)
 
+    def printInformation(ID):
+        global pointInformation
+        global xaxisChoice
+        # pointInformation = [[pointID, infoArray], [pointID, infoArray], ...]
+
+        # find the point
+        for i in pointInformation:
+            if i[0] == ID:
+                info = i[1]
+
+        string = ""
+        # parse the info
+        info = list(info)
+        xaxisChoice.reverse()
+        for i in range(len(xaxisChoice)):
+            string += xaxisChoice[i] + ": " + info[i] + "\n"
+
+        return string
 
     def onclick(event):
         vis = annot.get_visible()
@@ -274,6 +299,7 @@ def analyseData(url, config):
     else:
         splitChoice = ['branch']
 
+    global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)
 
     # catch exception that wget fails (or maybe rage unavailable)
