@@ -262,7 +262,15 @@ def okEvent():
     somID = None
     listSelected = frame.somListbox.curselection()
     url = frame.url.get()
-    id = frame.somNumber.get()
+    id = None
+    try:
+        id = frame.somNumber.get()
+        if id:
+            id = int(id)
+    except ValueError:
+        frame.label_message.set("Som number must be int")
+        return
+
     if (url and id) or (id and listSelected) or (url and listSelected):
         frame.label_message.set("Confused!\n More than one som number found")
         return
@@ -327,7 +335,6 @@ def okEvent():
     except terroriser.TerroriserError as e:
         frame.label_message.set(e)
     except e:
-        print(e)
         frame.label_message.set("Failed to graph")
     global tmpFiles
     if somID:
@@ -411,7 +418,7 @@ def parseTinyUrl(url):
             curl += i
             index += 1
             j += 1
-        newUrl = "http://rage/?p=som_data&id" + curl
+        newUrl = "http://rage/?p=som_data&id" + curl.split("'));")[0]
     if failed:
         frame.label_message.set("Invalid url provided")
         return None

@@ -54,12 +54,11 @@ def json2points(f):
     global points
     series = data.get("series")
     if not series:
-        return None
+        raise TerroriserError("No data in RAGE, old jobs")
 
     for i in range(len(series)):
          for p in series[i].get("data"):
              points.append(p)
-
     global splitNames
     splitNames = list(points[0][2].keys())
     global numOfSplits
@@ -96,6 +95,7 @@ def json2points(f):
     global nPoints
     nPoints = j
 
+    print(results)
     # results = [xvalue, yvalue, splitByIdentifier]
     return results
 
@@ -105,12 +105,8 @@ def json2points(f):
 # returns ordered arrays a, b
 def order(a, b):
     map = []
-    lenA = len(a)
-    if lenA > 1:
-        for i in range(lenA):
-            map.append([a[i], b[i]])
-    else:
-        map.append([a,b])
+    for i in range(len(a)):
+        map.append([a[i],b[i]])
 
     map = sorted(map)
     k = 0
@@ -251,6 +247,9 @@ def drawGraph(dataPoints, config):
             lenX = len(x[i]); lenY = len(y[i])
             assert(lenX == lenY)
             for k in range(lenX):
+                assert(len(x[i][k]) == 2)
+                assert(type(x[i][k]) is tuple)
+                assert(type(x[i][k][1]) is int)
                 tmpX.append(x[i][k][1])
                 tmpY.append(y[i][k][1])
             tmpX, tmpY = order(tmpX, tmpY)
@@ -261,6 +260,10 @@ def drawGraph(dataPoints, config):
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
             else:
+                if type(tmpX[0]) is list:
+                    print("tmpX[0][0]: ", tmpX[0][0])
+                    if type(tmpX[0][0]) is list:
+                        print("tmpX[0][0][0]: ", tmpX[0][0][0])
                 if config[2] == 1:
                     sc.append(plt.plot(tmpX, tmpY))
                 else:
@@ -280,8 +283,11 @@ def drawGraph(dataPoints, config):
         plt.legend()
     global som_name
     plt.title(som_name)
-    plt.show()
-    fig.canvas.mpl_disconnect(cid)
+    try:
+        plt.show()
+        fig.canvas.mpl_disconnect(cid)
+    except e:
+        raise TerroriserError("Couldn't plot graph")
 
 # Main entry point when being called from tinker.py
 # parses the json file then plots graph
@@ -317,6 +323,7 @@ def analyseData(url, config):
         raw = open("/tmp/somdata" + str(somID))
     if os.name == "nt":
         raw = open("somdata" + str(somID))
+    print("calling json2points")
     points = json2points(raw)
     if not points:
         return None
