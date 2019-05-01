@@ -424,6 +424,8 @@ def cleanup():
                 os.system("rm -f " + file)
         except:
             print("Failed to remove " + file)
+    if os.name == "nt":
+        os.system("rm somdata*")
 
 if __name__=="__main__":
 

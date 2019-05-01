@@ -4,6 +4,7 @@ import json
 import operator
 import subprocess
 import matplotlib.pyplot as plt
+import requests
 
 points = []
 nPoints = 0
@@ -302,21 +303,20 @@ def analyseData(url, config):
 
     global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)
-
+    dir = os.getcwd()
     # catch exception that wget fails (or maybe rage unavailable)
     if os.name == "posix":
         os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
     if os.name == "nt":
         response = requests.get(str(url))
         response.raise_for_status()
-        with open("somdata" + str(somID)) as h:
-            for block in response.iter_count(1024):
-                h.write(block)
+        with open(dir + "\\somdata" + str(somID), "w+") as h:
+            h.write(str((response.content).decode('utf-8')))
     print("Fetched data")
     if os.name == "posix":
         raw = open("/tmp/somdata" + str(somID))
     if os.name == "nt":
-        raw = open("somdata" + str(somID))
+        raw = open(dir + "\\somdata" + str(somID))
     points = json2points(raw)
     if not points:
         return None
