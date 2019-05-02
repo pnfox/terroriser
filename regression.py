@@ -2,7 +2,9 @@
 
 import os
 import argparse
+import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn import svm
 import terroriser
 
 def getUserArguments():
@@ -27,7 +29,11 @@ if __name__=="__main__":
     passmarkCPUScore = "http://rage/?p_som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
     config = [0,0,0]
     try:
-        x, y = terroriser.analyseData(loginVSImax, config, True)
+        # groupedX takes the form of an array of arrays
+        # with each subarray being data of a particular branch
+        groupedX, groupedY = terroriser.analyseData(loginVSImax, config, True)
+        assert(len(groupedX) == len(groupedY))
+
     except TypeError:
         print("Invalid arguments (wrong branch name)")
         exit()
@@ -35,5 +41,25 @@ if __name__=="__main__":
         print("Terroriser failed")
         exit()
 
+    # format data for sklearn
+    x = []; y = []
+    for i in range(len(groupedX)):
+
+        tmpX = []; tmpY = []
+        lenX = len(groupedX[i]); lenY = len(groupedY[i])
+        assert(lenX == lenY)
+        for k in range(lenX):
+            tmpX.append(groupedX[i][k][1])
+            tmpY.append(groupedY[i][k][1])
+        tmpX, tmpY = terroriser.order(tmpX, tmpY)
+
+        x.append(tmpX); y.append(tmpY)
+
     # start finding linear regressions
-    
+    classifier = svm.SVR()
+
+    learningData = np.asarray(x[0])
+    targetValues = []
+
+#    classifier.fit(learningData, targetValues)
+
