@@ -21,8 +21,8 @@ if __name__=="__main__":
     args = getUserArguments()
 
     comparisonBranch = args.baseline
-    branch = args.branch
+    userBranch = args.branch
 
-    loginVSImax = "http://rage/?som=512&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch "&v_branch=" + userBranch
-    config = [0,0]
-    terroriser.analyseData(loginVSImax, config)
+    loginVSImax = "http://rage/?p=som_data&id=512&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch
+    config = [0,0,0]
+    terroriser.analyseData(loginVSImax, config, True)
