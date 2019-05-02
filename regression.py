@@ -24,5 +24,16 @@ if __name__=="__main__":
     userBranch = args.branch
 
     loginVSImax = "http://rage/?p=som_data&id=512&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch
+    passmarkCPUScore = "http://rage/?p_som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
     config = [0,0,0]
-    terroriser.analyseData(loginVSImax, config, True)
+    try:
+        x, y = terroriser.analyseData(loginVSImax, config, True)
+    except TypeError:
+        print("Invalid arguments (wrong branch name)")
+        exit()
+    except terroriser.TerroriserError as e:
+        print("Terroriser failed")
+        exit()
+
+    # start finding linear regressions
+    
