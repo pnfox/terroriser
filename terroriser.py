@@ -357,7 +357,7 @@ def group_data(dataPoints, config):
                     # then dont continue as we want to color different branches
                     if config[1] == 0:
                         continue
-                s += p[i+3] + "\n"
+                s += str(p[i+3]) + "\n"
             try:
                 position = group.index(s)
                 x[position].append((p[0], p[1]))
@@ -371,8 +371,8 @@ def group_data(dataPoints, config):
         for p in dataPoints:
             x.append(p[1])
             y.append(p[2])
-    
-    return x,y
+
+    return x, y, group
 
 
 # Main entry point when being called from tinker.py
