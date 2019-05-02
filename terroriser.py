@@ -154,7 +154,7 @@ def findAverage(x, y):
 # Given the dataPoints which contains cartesian positions and
 # also contains split configuration. Config contains user
 # input on how he/she wishes the graphs to be drawn
-def drawGraph(dataPoints, config):
+def drawGraph(x, y, config):
 
     showlegend = config[0]
 
@@ -241,38 +241,6 @@ def drawGraph(dataPoints, config):
         else:
             plt.plot(xOfAvg, avg, marker="x", ms=10, mec='black', mfc='black', label=label)
 
-    # if we have chosen to split then plot multiple graphs
-    global numOfSplits
-    global splitNames
-    x = []; y = []; group = []
-    if numOfSplits > 1 or config[1]:
-        global axisPos
-        for p in dataPoints:
-            # collect different x,y's of each split value, excluding xaxis
-            # s will be the str concat of all splitIndentifies from json2points()
-            s = ""
-            for i in range(numOfSplits):
-                if i in axisPos:
-                    # if we used branch list (assuming this is also xaxis value)
-                    # or we branch was other option field
-                    # then dont continue as we want to color different branches
-                    if config[1] == 0:
-                        continue
-                s += p[i+3] + "\n"
-            try:
-                position = group.index(s)
-                x[position].append((p[0], p[1]))
-                y[position].append((p[0], p[2]))
-            except:
-                # didnt match
-                group.append(s)
-                x.append([]); y.append([])
-
-    elif numOfSplits == 1:
-        for p in dataPoints:
-            x.append(p[1])
-            y.append(p[2])
-
     global nPoints
     pointSize=250/(nPoints)**0.35
     sc = []
@@ -353,9 +321,45 @@ def drawGraph(dataPoints, config):
     except e:
         raise TerroriserError("Couldn't plot graph")
 
+def group_data(dataPoints, config):
+    # if we have chosen to split then plot multiple graphs
+    global numOfSplits
+    global splitNames
+    x = []; y = []; group = []
+    if numOfSplits > 1 or config[1]:
+        global axisPos
+        for p in dataPoints:
+            # collect different x,y's of each split value, excluding xaxis
+            # s will be the str concat of all splitIndentifies from json2points()
+            s = ""
+            for i in range(numOfSplits):
+                if i in axisPos:
+                    # if we used branch list (assuming this is also xaxis value)
+                    # or we branch was other option field
+                    # then dont continue as we want to color different branches
+                    if config[1] == 0:
+                        continue
+                s += p[i+3] + "\n"
+            try:
+                position = group.index(s)
+                x[position].append((p[0], p[1]))
+                y[position].append((p[0], p[2]))
+            except:
+                # didnt match
+                group.append(s)
+                x.append([]); y.append([])
+
+    elif numOfSplits == 1:
+        for p in dataPoints:
+            x.append(p[1])
+            y.append(p[2])
+    
+    return x,y
+
+
 # Main entry point when being called from tinker.py
 # parses the json file then plots graph
-def analyseData(url, config):
+def analyseData(url, config, regression = False):
 
     initialize()
     global splitChoice
@@ -402,5 +406,10 @@ def analyseData(url, config):
         global som_name
         som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
 
-    # Start drawing
-    drawGraph(points, config)
+    x, y = group_data(points, config)
+
+    if regression:
+        return x, y
+    else:
+        # Start drawing
+        drawGraph(x, y, config)
