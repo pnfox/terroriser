@@ -146,7 +146,7 @@ def findAverage(x, y):
 # Given the dataPoints which contains cartesian positions and
 # also contains split configuration. Config contains user
 # input on how he/she wishes the graphs to be drawn
-def drawGraph(x, y, config):
+def drawGraph(x, y, groupNames, config):
 
     showlegend = config[0]
 
@@ -257,7 +257,7 @@ def drawGraph(x, y, config):
                     plot = plt.plot(tmpX, tmpY, label=group[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
-                    sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
+                    sc.append(plt.scatter(tmpX, tmpY, label=groupNames[i]))
             else:
                 if type(tmpX[0]) is list:
                     print("tmpX[0][0]: ", tmpX[0][0])
@@ -312,7 +312,7 @@ def group_data(dataPoints, config):
                     # then dont continue as we want to color different branches
                     if config[1] == 0:
                         continue
-                s += p[i+3] + "\n"
+                s += str(p[i+3]) + "\n"
             try:
                 position = group.index(s)
                 x[position].append((p[0], p[1]))
@@ -326,8 +326,8 @@ def group_data(dataPoints, config):
         for p in dataPoints:
             x.append(p[1])
             y.append(p[2])
-    
-    return x,y
+
+    return x, y, group
 
 
 # Main entry point when being called from tinker.py
@@ -338,7 +338,10 @@ def analyseData(url, config, regression = False):
     global splitChoice
     print(url)
     somID = re.search(r"id=(\d+)", url).group(1)
-    splits = re.findall(r'&f_(\w+)=1', url)
+    if regression:
+        splits = re.findall(r'v_branch=(\w+\%?2?\w+\%?2?\w+)&', url)
+    else:
+        splits = re.findall(r'&f_(\w+)=1', url)
     if splits:
         for i in splits:
             splitChoice.append(i)
@@ -346,6 +349,8 @@ def analyseData(url, config, regression = False):
     # no splits from gui so default splits
     else:
         splitChoice = ['branch']
+
+    print("SplitChoices: ", splitChoice)
 
     global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)
@@ -376,10 +381,10 @@ def analyseData(url, config, regression = False):
         global som_name
         som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
 
-    x, y = group_data(points, config)
+    x, y, groupNames = group_data(points, config)
 
     if regression:
         return x, y
     else:
         # Start drawing
-        drawGraph(x, y, config)
+        drawGraph(x, y, groupNames, config)
