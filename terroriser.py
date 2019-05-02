@@ -27,6 +27,7 @@ def initialize():
     global xaxisChoice
     global xaxis
     global yaxis
+    global regression
     points = []
     nPoints = 0
     numOfSplits = 0
@@ -91,8 +92,12 @@ def json2points(f):
             for v in dict.values():
                 results[j].append(v)
         else:
-            for split in splitChoice:
-                results[j].append(dict.get(split))
+            global regression
+            if regression:
+                results[j].append(dict.get("branch"))
+            else:
+                for split in splitChoice:
+                    results[j].append(dict.get(split))
         j = j + 1
     global nPoints
     nPoints = j
@@ -256,6 +261,7 @@ def group_data(dataPoints, config):
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
     global splitNames
+    global regression
     x = []; y = []; group = []
     if numOfSplits > 1 or config[1]:
         global axisPos
@@ -270,7 +276,10 @@ def group_data(dataPoints, config):
                     # then dont continue as we want to color different branches
                     if config[1] == 0:
                         continue
-                s += str(p[i+3]) + "\n"
+                if regression:
+                    s += p[3] + "\n"
+                else:
+                    s += str(p[i+3]) + "\n"
             try:
                 position = group.index(s)
                 x[position].append((p[0], p[1]))
@@ -290,9 +299,11 @@ def group_data(dataPoints, config):
 
 # Main entry point when being called from tinker.py
 # parses the json file then plots graph
-def analyseData(url, config, regression = False):
+def analyseData(url, config, regre = False):
 
     initialize()
+    global regression
+    regression = regre
     global splitChoice
     print(url)
     somID = re.search(r"id=(\d+)", url).group(1)
