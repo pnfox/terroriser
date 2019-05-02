@@ -7,6 +7,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn import svm
 import terroriser
 
+def cleanString(string):
+    return string.replace("/", "%2f")
+
 def getUserArguments():
     parser = argparse.ArgumentParser()
 
@@ -22,10 +25,10 @@ if __name__=="__main__":
 
     args = getUserArguments()
 
-    comparisonBranch = args.baseline
-    userBranch = args.branch
+    comparisonBranch = cleanString(args.baseline)
+    userBranch = cleanString(args.branch)
 
-    loginVSImax = "http://rage/?p=som_data&id=512&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch
+    loginVSImax = "http://rage/?p=som_data&id=512&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
     passmarkCPUScore = "http://rage/?p_som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
     config = [0,0,0]
     try:
@@ -40,6 +43,8 @@ if __name__=="__main__":
     except terroriser.TerroriserError as e:
         print("Terroriser failed")
         exit()
+
+    print("len(groupedX)", len(groupedX))
 
     # format data for sklearn
     x = []; y = []
