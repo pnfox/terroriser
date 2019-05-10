@@ -32,12 +32,14 @@ if __name__=="__main__":
 
     loginVSImax = "http://rage/?p=som_data&id=33&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
     passmarkCPUScore = "http://rage/?p_som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
+    durationOfNthVMClone = "http://rage/?p=som_data&id=266&xaxix=branch&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
+    
     config = [0,0,0]
     try:
         # groupedX takes the form of an array of arrays
         # with each subarray being data of a particular branch
         print("Getting data...")
-        groupedX, groupedY = terroriser.analyseData(loginVSImax, config, True)
+        groupedX, groupedY = terroriser.analyseData(durationOfNthVMClone, config, True)
         assert(len(groupedX) == len(groupedY))
 
     except TypeError:
@@ -47,7 +49,9 @@ if __name__=="__main__":
         print("Terroriser failed")
         exit()
 
-    print("len(groupedX)", len(groupedX))
+    if len(groupedX) == 1:
+        print("No data found for a particular branch")
+        exit()
 
     # format data for sklearn
     x = []; y = []
@@ -62,6 +66,15 @@ if __name__=="__main__":
         tmpX, tmpY = terroriser.order(tmpX, tmpY)
 
         x.append(tmpX); y.append(tmpY)
+        varX = np.var(tmpX)
+        varY = np.var(tmpY)
+        # TODO: Maybe this should be varX / meanX ?
+        if varX < 10:
+            print("WARNING: low variance on X" + str(varX))
+            print("X axis doesn't provide a lot of information")
+        if varY < 10:
+            print("WARNING: low variance on Y" + str(varY))
+            print("Y axis doesn't provide a lot of information")
 
     # start finding linear regressions
     classifier = svm.SVR()
@@ -74,32 +87,5 @@ if __name__=="__main__":
         X.append([x[0][i], y[0][i]])
 
     X = np.asarray(X)
-    Y = np.dot(X, np.array([1,2])) + 3
+    print(X)
 
-    print("Training data...")
-    reg = LinearRegression().fit(X, Y)
-    reg.score(X, Y)
-
-    branchData = []
-    print(len(x[1]))
-    for i in range(len(x[1])):
-        branchData.append([x[1][i], y[1][i]])
-    branchData = np.asarray(branchData)
-    Y = np.dot(branchData, np.array([1,2])) + 3
-
-    print(" Make predictions useing the testing set...")
-    data = reg.predict(branchData)
-    print(data)
-    print(reg.score(branchData, Y))
-
-#    print("Mean squared error: %.2f" % mean_squared_error(y[1], y[0]))
-
-#    classifier.fit(learningData, targetValues)
-
-#    plt.scatter(x[1], Y)
-
-    yvalues = []
-    for i in range(len(data)):
-        yvalues.append(i)
-    plt.scatter(data, yvalues)
-    plt.show()
