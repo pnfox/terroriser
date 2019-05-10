@@ -13,6 +13,9 @@ tmpFiles = []
 root = Tk()
 root.title("Terroriser")
 root.geometry("700x600")
+COLOR = "grey86"
+COLOR2 = "black"
+root.configure(background=COLOR)
 
 def getRagePage(id):
     if os.name == "posix":
@@ -89,7 +92,7 @@ class CheckBar(Frame):
         self.vars = []
         for pick in picks:
            var = IntVar()
-           chk = Checkbutton(self, text=pick, variable=var)
+           chk = Checkbutton(self, text=pick, variable=var, bg=COLOR, fg=COLOR2)
            chk.pack()
            self.vars.append(var)
            self.checkboxes.append(chk)
@@ -158,12 +161,14 @@ class App():
 
         self.somTypeSelected = StringVar()
         self.somTypeSelected.set(somTypes[0])
-        somTypesOption = OptionMenu(rightFrame, self.somTypeSelected, *somTypes, command=self.getSelection).grid(column=0, row=0)
-
-        Label(rightFrame, text="Double click on som\nto see split options").grid(column=1, row=0)
+        somTypesOption = OptionMenu(rightFrame, self.somTypeSelected, *somTypes, command=self.getSelection)
+        somTypesOption.grid(column=0, row=0)
+        somTypesOption.tk_setPalette(background=COLOR)
+        
+        Label(rightFrame, text="Double click on som\nto see split options", bg=COLOR, fg=COLOR2).grid(column=1, row=0)
         self.checkbar = CheckBar(rightFrame, [])
         self.checkbar.grid(column=1, row=1, columnspan=2)
-        self.somListbox = Listbox(rightFrame, exportselection=0, width=30)
+        self.somListbox = Listbox(rightFrame, exportselection=0, width=30, background=COLOR, foreground=COLOR2)
         self.somListbox.grid(column=0, row=1, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
         #scrollbar = Scrollbar(rightFrame,orient="vertical", width=20)
@@ -174,48 +179,48 @@ class App():
 
         self.splits = []
 
-        self.xaxisList = Listbox(rightFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=5)
+        self.xaxisList = Listbox(rightFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=5, background=COLOR, foreground=COLOR2)
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=0, row=2, sticky=W)
 
-        Label(leftFrame, text="SOM number\n(optional):").grid(column=0,row=0)
+        Label(leftFrame, text="SOM number\n(optional):", background=COLOR, foreground=COLOR2).grid(column=0,row=0)
         self.somNumber = Entry(leftFrame, bd=2)
-        self.somNumber.grid(column=1,row=0)
+        self.somNumber.grid(column=1, row=0)
 
-        Label(leftFrame, text="URL\n(optional): ").grid(column=0, row=1)
+        Label(leftFrame, text="URL\n(optional): ", background=COLOR, foreground=COLOR2).grid(column=0, row=1)
         self.url = Entry(leftFrame, bd=2)
         self.url.grid(column=1, row=1)
 
-        splitsButton = ttk.Button(leftFrame, text="Update GUI", command=updateSplits)
+        splitsButton = Button(leftFrame, text="Update GUI", command=updateSplits, bg=COLOR, fg=COLOR2)
         splitsButton.grid(column=1, row=2)
 
         self.label_message = StringVar()
         self.label_message.set("")
-        self.info_box = Label(rightFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5)
+        self.info_box = Label(rightFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5, bg=COLOR, fg=COLOR2)
         self.info_box.grid(column=0, row=3, sticky='NSWE')
 
-        Label(leftFrame, text="Show legend:").grid(column=0, row=3)
+        Label(leftFrame, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=0, row=3)
         self.legend = IntVar()
         self.legendOption = Checkbutton(leftFrame, variable=self.legend)
         self.legendOption.grid(column=1,row=3)
 
-        Label(leftFrame, text="Line plot: ").grid(column=0, row=4)
+        Label(leftFrame, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=0, row=4)
         self.linePlot = IntVar()
-        line = Checkbutton(leftFrame, variable=self.linePlot).grid(column=1, row=4)
+        line = Checkbutton(leftFrame, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=1, row=4)
 
-        Label(middleFrame, text="Branch:").grid(column=0,row=0)
-        self.branchList = Listbox(middleFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=3)
+        Label(middleFrame, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=0)
+        self.branchList = Listbox(middleFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=3, bg=COLOR, fg=COLOR2)
         insertListOptions(self.branchList, [])
         self.branchList.grid(column=0, row=1)
-        Label(middleFrame, text="Other option:").grid(column=0, row=2)
-        self.optionName = Entry(middleFrame, bd=2)
-        self.optionValue = Entry(middleFrame, bd=2)
+        Label(middleFrame, text="Other option:", background=COLOR, foreground=COLOR2).grid(column=0, row=2)
+        self.optionName = Entry(middleFrame, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionValue = Entry(middleFrame, bd=2, bg=COLOR, fg=COLOR2)
         self.optionName.grid(column=1, row=2)
         self.optionValue.grid(column=2, row=2)
 
-        resetButton = ttk.Button(bottomFrame, text="Reset", command=reset)
-        graphButton = ttk.Button(bottomFrame, text="Graph", command=okEvent)
-        cancelButton = ttk.Button(bottomFrame, text="Quit", command=root.destroy)
+        resetButton = Button(bottomFrame, bg=COLOR, fg=COLOR2, text="Reset", command=reset)
+        graphButton = Button(bottomFrame, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
+        cancelButton = Button(bottomFrame, bg=COLOR, fg=COLOR2, text="Quit", command=root.destroy)
 
         graphButton.grid(column=0, row=0)
         resetButton.grid(column=1, row=0)
@@ -411,7 +416,7 @@ def parseTinyUrl(url):
             curl += i
             index += 1
             j += 1
-        newUrl = "http://rage/?p=som_data&id" + curl
+        newUrl = "http://rage/?p=som_data&id" + curl.split("'));")[0]
     if failed:
         frame.label_message.set("Invalid url provided")
         return None
