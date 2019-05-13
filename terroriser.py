@@ -112,8 +112,15 @@ def json2points(f):
 # returns ordered arrays a, b
 def order(a, b):
     map = []
-    for i in range(len(a)):
-        map.append([a[i],b[i]])
+    lenA = len(a)
+    if lenA > 1:
+        for i in range(lenA):
+            map.append([a[i], b[i]])
+    elif lenA == 0:
+        print("WARNING: terroriser.order: No data in array")
+        return [], []
+    else:
+        map.append([a,b])
 
     map = sorted(map)
     k = 0
@@ -179,14 +186,14 @@ def drawGraph(x, y, groupNames, config):
                 if x[plotIndex][p][1] == pos[0] and y[plotIndex][p][1] == pos[1]:
                     # FIX: p doesn't point to same point in x and dataPoints
                     # fix with this p = len(x[plotIndex]) + p
-                    text = "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
+                    text = "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n"
                     pointID = x[plotIndex][p][0]
                     text += printInformation(pointID)
                     break
         else:
             for p in range(len(x)):
                 if x[p] == pos[0] and y[p] == pos[1]:
-                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1])
+                    text =  "x-value: " + str(pos[0]) + "\ny-value: " + str(pos[1]) + "\n"
                     text += printInformation(p)
                     break
         annot.set_text(text)
