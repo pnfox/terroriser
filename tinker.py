@@ -322,7 +322,7 @@ def okEvent():
 
     try:
         # start graphing
-        p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
+        p = Process(target=terroriser.tinkerEntryPoint(url, config), args=(url, config, ))
         p.start()
         p.join()
         # TODO: catch process error code for better error logging
