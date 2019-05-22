@@ -94,7 +94,8 @@ def json2points(f):
         else:
             global regression
             if regression:
-                results[j].append(dict.get("branch"))
+                for key in dict.keys():
+                    results[j].append(dict.get(key))
             else:
                 for split in splitChoice:
                     results[j].append(dict.get(split))
@@ -346,45 +347,9 @@ def group_data(dataPoints, config):
     return x, y, group
 
 
-def group_data(dataPoints, config):
-    # if we have chosen to split then plot multiple graphs
-    global numOfSplits
-    global splitNames
-    x = []; y = []; group = []
-    if numOfSplits > 1 or config[1]:
-        global axisPos
-        for p in dataPoints:
-            # collect different x,y's of each split value, excluding xaxis
-            # s will be the str concat of all splitIndentifies from json2points()
-            s = ""
-            for i in range(numOfSplits):
-                if i in axisPos:
-                    # if we used branch list (assuming this is also xaxis value)
-                    # or we branch was other option field
-                    # then dont continue as we want to color different branches
-                    if config[1] == 0:
-                        continue
-                s += str(p[i+3]) + "\n"
-            try:
-                position = group.index(s)
-                x[position].append((p[0], p[1]))
-                y[position].append((p[0], p[2]))
-            except:
-                # didnt match
-                group.append(s)
-                x.append([]); y.append([])
-
-    elif numOfSplits == 1:
-        for p in dataPoints:
-            x.append(p[1])
-            y.append(p[2])
-
-    return x, y, group
-
-
-# Main entry point when being called from tinker.py
-# parses the json file then plots graph
-def analyseData(url, config, regression = False):
+# Gets data from rage given a url then uses json2points
+# to parse data into python structures
+def getData(url, config, regre = False):
 
     initialize()
     global regression
@@ -406,6 +371,7 @@ def analyseData(url, config, regression = False):
 
     print("SplitChoices: ", splitChoice)
 
+    print("Fetching data........", end='', flush=True)
     global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)
     dir = os.getcwd()
@@ -417,11 +383,12 @@ def analyseData(url, config, regression = False):
         response.raise_for_status()
         with open(dir + "\\somdata" + str(somID), "w+") as h:
             h.write(str((response.content).decode('utf-8')))
-    print("Fetched data")
     if os.name == "posix":
         raw = open("/tmp/somdata" + str(somID))
     if os.name == "nt":
         raw = open(dir + "\\somdata" + str(somID))
+    print("COMPLETE")
+    print("Parsing JSON data.........", end='', flush=True)
     points = json2points(raw)
     if not points:
         return None
@@ -435,10 +402,14 @@ def analyseData(url, config, regression = False):
         global som_name
         som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
 
-    x, y, groupNames = group_data(points, config)
+    print("COMPLETE")
 
-    if regression:
-        return x, y
-    else:
-        # Start drawing
-        drawGraph(x, y, groupNames, config)
+    return points
+
+# Main entry point for the tinker program
+def tinkerEntryPoint(url, config):
+
+    p = getData(url, config, False)
+    x, y, groupNames = group_data(p, config)
+    print("Plotting data.........")
+    drawGraph(x, y, groupNames, config)

@@ -364,7 +364,7 @@ def okEvent():
     try:
         # start graphing
         root.label_message.set("Starting to graph")
-        p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
+        p = Process(target=terroriser.tinkerEntryPoint(url, config), args=(url, config, ))
         p.start()
         p.join()
         root.label_message.set("")
