@@ -291,11 +291,14 @@ class App(Tk):
         insertListOptions(self.somListbox, s)
 
 def reset():
-    self.checkbar.clear()
-    self.somListbox.delete(0, self.somListbox.size()-1)
-    self.url.delete(0, len(self.url.get()))
-    self.somNumber.delete(0, len(self.somNumber.get()))
-
+    root.checkbar.clear()
+    root.somListbox.delete(0, root.somListbox.size()-1)
+    root.url.delete(0, len(root.url.get()))
+    root.somNumber.delete(0, len(root.somNumber.get()))
+    root.branchList.delete(0, 'end')
+    root.optionName.delete(0, 'end')
+    root.optionValue.delete(0, 'end')
+    
 def getOptions():
     options = ""
     checkbarStates = root.checkbar.vars
