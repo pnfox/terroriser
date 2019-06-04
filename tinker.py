@@ -124,19 +124,76 @@ blackw = {"HTTP throughput" : 476,
               "SSL TPS (mean)" : 487,
               "TCP Conn/sec" : 481,
               "TCP Conn/sec (mean)" : 482}
+diskconc2 = {"Aggregate disk thoughput" : 389,
+             "Disk throughput" : 390,
+             "Maximum agg disk throughput" : 453,
+             "Aggregate IOPS" : 454,
+             "Min agg disk throughput single block-size" : 500}
+lmbench = {"Simple syscall" : 41,
+           "Simple read" : 42,
+           "Simple write" : 43,
+           "Simple stat" : 44,
+           "Simple fstat" : 45,
+           "Simple open/close" : 46,
+           "Signal handler installation" : 47,
+           "Signal handler overhead" : 48,
+           "Protection fault" : 49,
+           "Pipe latency" : 50,
+           "Pipe bandwidth" : 66,
+           "AF_UNIX sock stream latency" : 51,
+           "AF_UNIX sock stream bandwidth" : 65,
+           "Process fork+exit" : 52,
+           "Process fork+execve" : 53,
+           "Process fock+/bin/sh -c" : 54,
+           "Float bogomflops" : 55,
+           "Double bogomflops" : 56,
+           "File /local/scratch/XXX write bandwidth" : 57,
+           "Pagefaults on /local/scratch/XXX" : 58,
+           "UDP latency using localhost" : 59,
+           "TCP latency using localhost" : 60,
+           "61 RPC/udp latency using localhost" : 61,
+           "RPC/tcp latecy using localhost" : 62,
+           "TCP/IP connection cost to localhost" : 63,
+           "Average transfer" : 64,
+           "TLB size" : 67,
+           "Select on X fds" : 68,
+           "Select on X TCP fds" : 69,
+           "Filesystem latency (create ops per second)" : 70,
+           "Filesystem latency (delete ops per second)" : 71,
+           "Sock bandwidth using localhost" : 72,
+           "Read bandwidth" : 73,
+           "Read open2close bandwidth" : 74,
+           "Mmap read bandwidth" : 75,
+           "Mmap read open2close bandwidth" : 76,
+           "Libc bcopy unaligned" : 77,
+           "Libc bcopy aligned" : 78,
+           "Memory read bandwidth" : 82,
+           "Memory write bandwidth" : 84,
+           "Integer op" : 90,
+           "Int64 op" : 91,
+           "Float op" : 92,
+           "Double op" : 93,
+           "Integer op parallelism" : 94,
+           "Int64 op parallelism" : 95,
+           "Float op parallelism" : 96,
+           "Double op parallelism" : 97,
+           "Steam2 latency" : 99,
+           "Stream2 bandwidth" : 101} 
 
 
 soms = {"VM clone" : vmclone,
         "Active Directory operations" : actDir,
         "Apachebench" : apache,
-        "Blackwidow" : blackw}
+        "Blackwidow" : blackw,
+        "Diskconc2" : diskconc2,
+        "Lmbench" : lmbench}
 xaxis = {"branch": 0,
          "product": 1,
          "build_number": 2,
          "build_date": 3,
          "build_tag":4,
          "job_id": 5}
-somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow"]
+somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow", "Diskconc2", "Lmbench"]
 
 # Inserts dict key,value pairs to a listbox
 def insertListOptions(lbox, dict):
@@ -170,21 +227,21 @@ class App(Tk):
         checkbarFrame = ttk.Frame(self.content)
         self.checkbar = CheckBar(checkbarFrame, [])
         checkbarFrame.grid(column=3, row=3)
-        self.somListbox = Listbox(self.content, exportselection=0, width=20, foreground=COLOR2)
+        self.somListbox = Listbox(self.content, exportselection=0, width=30, foreground=COLOR2)
         self.somListbox.grid(column=1, row=2, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
         
         Label(self.content, text="Xaxis:").grid(column=0, row=5)
-        self.xaxisList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=20, height=5, background=COLOR, foreground=COLOR2)
+        self.xaxisList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=5, background=COLOR, foreground=COLOR2)
         insertListOptions(self.xaxisList, xaxis)
         self.xaxisList.grid(column=1, row=5, sticky=W)
 
         Label(self.content, text="SOM number:", background=COLOR, foreground=COLOR2).grid(column=0,row=1)
-        self.somNumber = Entry(self.content, bd=2)
+        self.somNumber = Entry(self.content, width=30 ,bd=2)
         self.somNumber.grid(column=1, row=1)
 
         Label(self.content, text="URL: ", background=COLOR, foreground=COLOR2).grid(column=0, row=0)
-        self.url = Entry(self.content, bd=2)
+        self.url = Entry(self.content, width=30, bd=2)
         self.url.grid(column=1, row=0)
 
         #splitsButton = Button(leftFrame, text="Update GUI", command=updateSplits, bg=COLOR, fg=COLOR2)
@@ -205,7 +262,7 @@ class App(Tk):
         line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
 
         Label(self.content, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=4)
-        self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=20, height=3, bg=COLOR, fg=COLOR2)
+        self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=3, bg=COLOR, fg=COLOR2)
         insertListOptions(self.branchList, [])
         self.branchList.grid(column=1, row=4)
         Label(self.content, text="Other option:", background=COLOR, foreground=COLOR2).grid(column=0, row=6)
