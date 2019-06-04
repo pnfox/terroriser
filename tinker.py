@@ -6,8 +6,6 @@ import requests
 from multiprocessing import Process
 from json import JSONDecodeError
 
-import code
-
 import terroriser
 
 tmpFiles = []
@@ -66,7 +64,6 @@ def findSplits(id):
 
 def findBranches(id):
     somFile = getRagePage(id)
-    code.interact(local=locals())
     branches = []
     branchFound = False
     for line in somFile:
@@ -76,7 +73,7 @@ def findBranches(id):
             branchFound = False
         elif branchFound:
             if "<option" in line:
-                v = re.match(r'<option value=\'(\w+)\'', line)
+                v = re.match(r'<option value=\'([^\']*)\'', line)
                 if v:
                     v = v.group(1)
                     branches.append(v)
