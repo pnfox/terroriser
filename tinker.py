@@ -6,18 +6,21 @@ import requests
 from multiprocessing import Process
 from json import JSONDecodeError
 
+import code
+
 import terroriser
 
 tmpFiles = []
 
-root = Tk()
-root.title("Terroriser")
-root.geometry("700x600")
 COLOR = "grey86"
 COLOR2 = "black"
-root.configure(background=COLOR)
 
 def getRagePage(id):
+   
+    if id == 0 or id == None:
+        raise ValueError("Incorrect SOM ID")
+    
+    print("Getting rage page http://rage/?som=" + str(id))
     if os.name == "posix":
         os.system("wget -q http://rage/?som=" + str(id) + " -O /tmp/som" + str(id))
     if os.name == "nt":
@@ -42,8 +45,9 @@ def getRagePage(id):
 # Finds the options that we can split by after tc_config_id
 #
 def findSplits(id):
+    
+    print("Finding more useful options from rage page")
     somFile = getRagePage(id)
-
     splits = []
     tcConfigFound = False
     for line in somFile:
@@ -62,7 +66,7 @@ def findSplits(id):
 
 def findBranches(id):
     somFile = getRagePage(id)
-
+    code.interact(local=locals())
     branches = []
     branchFound = False
     for line in somFile:
@@ -92,10 +96,11 @@ class CheckBar(Frame):
         self.vars = []
         for pick in picks:
            var = IntVar()
-           chk = Checkbutton(self, text=pick, variable=var, bg=COLOR, fg=COLOR2)
+           chk = Checkbutton(self, text=pick, variable=var, bg="cyan")
            chk.pack()
            self.vars.append(var)
            self.checkboxes.append(chk)
+ 
     def clear(self):
         for i in self.checkboxes:
             i.destroy()
@@ -150,140 +155,126 @@ def insertListOptions(lbox, dict):
             v = dict.get(k)
             lbox.insert(v, k)
 
-class App():
+class App(Tk):
     def __init__(self):
-        self.content = ttk.Frame(root).grid(column=0,row=0)
+        Tk.__init__(self)
+        self.title("Terroriser")
+        self.configure(background=COLOR)
+        self.content = ttk.Frame(self).grid(column=0,row=0)
         ttk.Style().theme_use('clam')
-        rightFrame = ttk.Frame(self.content)
-        leftFrame = ttk.Frame(self.content)
-        middleFrame = ttk.Frame(self.content)
-        bottomFrame = ttk.Frame(self.content)
 
         self.somTypeSelected = StringVar()
         self.somTypeSelected.set(somTypes[0])
-        somTypesOption = OptionMenu(rightFrame, self.somTypeSelected, *somTypes, command=self.getSelection)
-        somTypesOption.grid(column=0, row=0)
-        somTypesOption.tk_setPalette(background=COLOR)
-        
-        Label(rightFrame, text="Double click on som\nto see split options", bg=COLOR, fg=COLOR2).grid(column=1, row=0)
-        self.checkbar = CheckBar(rightFrame, [])
-        self.checkbar.grid(column=1, row=1, columnspan=2)
-        self.somListbox = Listbox(rightFrame, exportselection=0, width=30, background=COLOR, foreground=COLOR2)
-        self.somListbox.grid(column=0, row=1, sticky=W)
+        somTypesDropDown = OptionMenu(self.content, self.somTypeSelected, *somTypes, command=self.getSelection)
+        somTypesDropDown.config(width=20)
+        somTypesDropDown.grid(column=0, row=2, padx=20, sticky="EW")
+        somTypesDropDown.tk_setPalette(background=COLOR)
+      
+        checkbarFrame = ttk.Frame(self.content)
+        self.checkbar = CheckBar(checkbarFrame, [])
+        checkbarFrame.grid(column=3, row=3)
+        self.somListbox = Listbox(self.content, exportselection=0, width=20, foreground=COLOR2)
+        self.somListbox.grid(column=1, row=2, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
-        #scrollbar = Scrollbar(rightFrame,orient="vertical", width=20)
-        #scrollbar.grid(column=0,row=1, sticky=E)
-        #scrollbar.config(command=self.somListbox.yview)
-        #self.somListbox.config(yscrollcommand=scrollbar.set)
-
-
-        self.splits = []
-
-        self.xaxisList = Listbox(rightFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=5, background=COLOR, foreground=COLOR2)
+        
+        Label(self.content, text="Xaxis:").grid(column=0, row=5)
+        self.xaxisList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=20, height=5, background=COLOR, foreground=COLOR2)
         insertListOptions(self.xaxisList, xaxis)
-        self.xaxisList.grid(column=0, row=2, sticky=W)
+        self.xaxisList.grid(column=1, row=5, sticky=W)
 
-        Label(leftFrame, text="SOM number\n(optional):", background=COLOR, foreground=COLOR2).grid(column=0,row=0)
-        self.somNumber = Entry(leftFrame, bd=2)
-        self.somNumber.grid(column=1, row=0)
+        Label(self.content, text="SOM number:", background=COLOR, foreground=COLOR2).grid(column=0,row=1)
+        self.somNumber = Entry(self.content, bd=2)
+        self.somNumber.grid(column=1, row=1)
 
-        Label(leftFrame, text="URL\n(optional): ", background=COLOR, foreground=COLOR2).grid(column=0, row=1)
-        self.url = Entry(leftFrame, bd=2)
-        self.url.grid(column=1, row=1)
+        Label(self.content, text="URL: ", background=COLOR, foreground=COLOR2).grid(column=0, row=0)
+        self.url = Entry(self.content, bd=2)
+        self.url.grid(column=1, row=0)
 
-        splitsButton = Button(leftFrame, text="Update GUI", command=updateSplits, bg=COLOR, fg=COLOR2)
-        splitsButton.grid(column=1, row=2)
+        #splitsButton = Button(leftFrame, text="Update GUI", command=updateSplits, bg=COLOR, fg=COLOR2)
+        #splitsButton.grid(column=1, row=2)
 
         self.label_message = StringVar()
         self.label_message.set("")
-        self.info_box = Label(rightFrame, textvariable=self.label_message,height=4, width=5, padx=5, pady=5, bg=COLOR, fg=COLOR2)
-        self.info_box.grid(column=0, row=3, sticky='NSWE')
+        self.info_box = Label(self.content, textvariable=self.label_message,height=4, width=5, padx=5, pady=5, bg=COLOR, fg=COLOR2)
+        self.info_box.grid(column=1, row=9, columnspan=2, sticky='NSWE')
 
-        Label(leftFrame, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=0, row=3)
+        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(leftFrame, variable=self.legend)
-        self.legendOption.grid(column=1,row=3)
+        self.legendOption = Checkbutton(self.content, variable=self.legend)
+        self.legendOption.grid(column=8,row=8)
 
-        Label(leftFrame, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=0, row=4)
+        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
         self.linePlot = IntVar()
-        line = Checkbutton(leftFrame, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=1, row=4)
+        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
 
-        Label(middleFrame, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=0)
-        self.branchList = Listbox(middleFrame, selectmode=MULTIPLE, exportselection=0, width=20, height=3, bg=COLOR, fg=COLOR2)
+        Label(self.content, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=4)
+        self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=20, height=3, bg=COLOR, fg=COLOR2)
         insertListOptions(self.branchList, [])
-        self.branchList.grid(column=0, row=1)
-        Label(middleFrame, text="Other option:", background=COLOR, foreground=COLOR2).grid(column=0, row=2)
-        self.optionName = Entry(middleFrame, bd=2, bg=COLOR, fg=COLOR2)
-        self.optionValue = Entry(middleFrame, bd=2, bg=COLOR, fg=COLOR2)
-        self.optionName.grid(column=1, row=2)
-        self.optionValue.grid(column=2, row=2)
+        self.branchList.grid(column=1, row=4)
+        Label(self.content, text="Other option:", background=COLOR, foreground=COLOR2).grid(column=0, row=6)
+        self.optionName = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionValue = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionName.grid(column=1, row=6)
+        self.optionValue.grid(column=2, row=6)
 
-        resetButton = Button(bottomFrame, bg=COLOR, fg=COLOR2, text="Reset", command=reset)
-        graphButton = Button(bottomFrame, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
-        cancelButton = Button(bottomFrame, bg=COLOR, fg=COLOR2, text="Quit", command=root.destroy)
+        resetButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Reset", command=reset)
+        graphButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
+        cancelButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Quit", command=self.destroy)
 
-        graphButton.grid(column=0, row=0)
-        resetButton.grid(column=1, row=0)
-        cancelButton.grid(column=2,row=0)
-
-        rightFrame.grid(column=0, row=0)
-        leftFrame.grid(column=1, row=0)
-        middleFrame.grid(column=0, row=1, columnspan=2)
-        bottomFrame.grid(column=0, row=2, columnspan=2)
+        graphButton.grid(column=7, row=10, sticky=E)
+        resetButton.grid(column=8, row=10, sticky=E)
+        cancelButton.grid(column=9,row=10, sticky=E)
 
     def onDouble(self, event):
-        tmpDict = soms.get(frame.somTypeSelected.get())
-        somID = tmpDict.get(frame.somListbox.get(frame.somListbox.curselection()))
-        frame.checkbar.clear()
-        self.splits = findSplits(somID)
-        frame.checkbar.update(self.splits)
-
+        updateSplits()
+        self.label_message.set("")
+        
     def getSelection(self, event):
         self.somTypeSelected.get()
         # update somListBox entries
-        frame.somListbox.delete(0, frame.somListbox.size()-1)
+        self.somListbox.delete(0, self.somListbox.size()-1)
         s = soms.get(self.somTypeSelected.get())
-        insertListOptions(frame.somListbox, s)
+        insertListOptions(self.somListbox, s)
 
 def reset():
-    frame.checkbar.clear()
-    frame.somListbox.delete(0, frame.somListbox.size()-1)
-    frame.url.delete(0, len(frame.url.get()))
-    frame.somNumber.delete(0, len(frame.somNumber.get()))
+    self.checkbar.clear()
+    self.somListbox.delete(0, self.somListbox.size()-1)
+    self.url.delete(0, len(self.url.get()))
+    self.somNumber.delete(0, len(self.somNumber.get()))
 
 def getOptions():
     options = ""
-    checkbarStates = frame.checkbar.vars
+    checkbarStates = root.checkbar.vars
     j = 0
     for state in checkbarStates:
         if state.get() == 1:
             # checkbox has been ticked
-            options += "&f_" + frame.splits[j] + "=1"
+            options += "&f_" + root.splits[j] + "=1"
         j = j + 1
     return options
 
 def okEvent():
     options = ""
     somID = None
-    listSelected = frame.somListbox.curselection()
-    url = frame.url.get()
-    id = frame.somNumber.get()
+    listSelected = root.somListbox.curselection()
+    url = root.url.get()
+    id = root.somNumber.get()
     if (url and id) or (id and listSelected) or (url and listSelected):
-        frame.label_message.set("Confused!\n More than one som number found")
+        root.label_message.set("Confused!\n More than one som number found")
         return
 
     # parse xaxisList selection
-    for i in frame.xaxisList.curselection():
-        options += "&xaxis=" + frame.xaxisList.get(i)
+    for i in root.xaxisList.curselection():
+        options += "&xaxis=" + root.xaxisList.get(i)
 
     # parse branch listbox
-    for i in frame.branchList.curselection():
-        branch = frame.branchList.get(i).replace("/", "%2F")
+    for i in root.branchList.curselection():
+        branch = root.branchList.get(i).replace("/", "%2F")
         options += "&v_branch=" + branch
 
     # parse other option textbox fields
-    optionName = frame.optionName.get()
-    optionValue = frame.optionValue.get()
+    optionName = root.optionName.get()
+    optionValue = root.optionValue.get()
     if optionName and optionValue:
         for i in optionValue.split(","):
             i = i.replace("/", "%2F")
@@ -292,12 +283,12 @@ def okEvent():
     if url:
         # we use url from url TextBox, check validation
         if not re.match(r'http://rage/\?(som|t)=', url):
-            frame.label_message.set("Invalid url provided")
+            root.label_message.set("Invalid url provided")
             return
         else:
             url = parseTinyUrl(url)
             if url:
-                frame.label_message.set("Using raw url")
+                root.label_message.set("Using raw url")
             else:
                 return
             url = url + getOptions()
@@ -306,42 +297,50 @@ def okEvent():
         somID = id
         url = "http://rage/?p=som_data&id=" + str(somID) + getOptions() + options
     elif listSelected:
-        tmpDict = soms.get(frame.somTypeSelected.get())
-        somID = tmpDict.get(frame.somListbox.get(listSelected))
+        tmpDict = soms.get(root.somTypeSelected.get())
+        somID = tmpDict.get(root.somListbox.get(listSelected))
         if not somID:
             return
-        frame.label_message.set("Graphing data for SOM: " + str(somID))
+        root.label_message.set("Graphing data for SOM: " + str(somID))
         url = "http://rage/?p=som_data&id=" + str(somID) + options + getOptions()
     else:
-        frame.label_message.set("Nothing to graph")
+        root.label_message.set("Nothing to graph")
         return
 
-    config = [frame.legend.get(), 0, frame.linePlot.get()]
-    if frame.branchList.curselection() or optionName == "branch":
+    config = [root.legend.get(), 0, root.linePlot.get()]
+    if root.branchList.curselection() or optionName == "branch":
         config[1] = 1
 
     try:
         # start graphing
+        root.label_message.set("Starting to graph")
         p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
         p.start()
         p.join()
+        root.label_message.set("")
         # TODO: catch process error code for better error logging
     except JSONDecodeError as e:
         print(e)
-        frame.label_message.set("Failed to parse JSON")
+        root.label_message.set("Failed to parse JSON")
     except terroriser.TerroriserError as e:
-        frame.label_message.set(e)
+        root.label_message.set(e)
     except e:
         print(e)
-        frame.label_message.set("Failed to graph")
+        root.label_message.set("Failed to graph")
+    
     global tmpFiles
     if somID:
         tmpFiles.append("/tmp/somdata" + str(somID))
 
 def updateSplits():
+ 
+    root.label_message.set("Getting available branches")
+    somID = None
+    tmpDict = soms.get(root.somTypeSelected.get())
+    category = tmpDict.get(root.somListbox.get(root.somListbox.curselection()))
     # if we have used Som Number TextBox
-    id = frame.somNumber.get()
-    urlTextInput = frame.url.get()
+    id = root.somNumber.get()
+    urlTextInput = root.url.get()
     if id:
         somID = id
     # if we have used url textbox
@@ -355,17 +354,21 @@ def updateSplits():
             if somID:
                 somID = somID.group(1)
             else:
-                frame.label_message.set("Could not update splits")
+                root.label_message.set("Could not update splits")
                 return
-    else:
-        frame.label_message.set("Could not update splits")
+    elif category:
+        somID = category
+    
+    if not somID:
+        root.label_message.set("Could not update splits")
         return
-    frame.splits = findSplits(somID)
-    insertListOptions(frame.branchList, findBranches(somID))
-    if frame.splits:
-        frame.checkbar.clear()
-        frame.checkbar.update(frame.splits)
-
+ 
+    root.splits = findSplits(somID)
+    insertListOptions(root.branchList, findBranches(somID))
+    if root.splits:
+        root.checkbar.clear()
+        root.checkbar.update(root.splits)
+        
 def parseTinyUrl(url):
     curl = ""
     t = None
@@ -418,7 +421,7 @@ def parseTinyUrl(url):
             j += 1
         newUrl = "http://rage/?p=som_data&id" + curl.split("'));")[0]
     if failed:
-        frame.label_message.set("Invalid url provided")
+        root.label_message.set("Invalid url provided")
         return None
     return newUrl
 
@@ -435,6 +438,6 @@ def cleanup():
 if __name__=="__main__":
 
     assert sys.version_info >= (3,0)
-    frame = App()
+    root = App()
     root.mainloop()
     cleanup()
