@@ -327,7 +327,7 @@ def group_data(dataPoints, config):
                     if config[1] == 0:
                         continue
                 if regression:
-                    s += p[3] + "\n"
+                    s += str(p[3]) + "\n"
                 else:
                     s += str(p[i+3]) + "\n"
             try:
