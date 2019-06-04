@@ -219,11 +219,11 @@ class App(Tk):
 
         self.somTypeSelected = StringVar()
         self.somTypeSelected.set(somTypes[0])
-        somTypesDropDown = OptionMenu(self.content, self.somTypeSelected, *somTypes, command=self.getSelection)
-        somTypesDropDown.config(width=20)
-        somTypesDropDown.grid(column=0, row=2, padx=20, sticky="EW")
-        somTypesDropDown.tk_setPalette(background=COLOR)
-      
+        self.somTypesDropDown = OptionMenu(self.content, self.somTypeSelected, *somTypes, command=self.getSelection)
+        self.somTypesDropDown.config(width=20)
+        self.somTypesDropDown.grid(column=0, row=2, padx=20, sticky="EW")
+        self.somTypesDropDown.tk_setPalette(background=COLOR)
+        
         checkbarFrame = ttk.Frame(self.content)
         self.checkbar = CheckBar(checkbarFrame, [])
         checkbarFrame.grid(column=3, row=3)
@@ -239,10 +239,12 @@ class App(Tk):
         Label(self.content, text="SOM number:", background=COLOR, foreground=COLOR2).grid(column=0,row=1)
         self.somNumber = Entry(self.content, width=30 ,bd=2)
         self.somNumber.grid(column=1, row=1)
+        self.somNumber.bind("<FocusOut>", self.disableUI)
 
         Label(self.content, text="URL: ", background=COLOR, foreground=COLOR2).grid(column=0, row=0)
         self.url = Entry(self.content, width=30, bd=2)
         self.url.grid(column=1, row=0)
+        self.url.bind("<FocusOut>", self.disableUI)
 
         #splitsButton = Button(leftFrame, text="Update GUI", command=updateSplits, bg=COLOR, fg=COLOR2)
         #splitsButton.grid(column=1, row=2)
@@ -289,6 +291,28 @@ class App(Tk):
         self.somListbox.delete(0, self.somListbox.size()-1)
         s = soms.get(self.somTypeSelected.get())
         insertListOptions(self.somListbox, s)
+        
+    # If URL is used then dont let user use somID Entry box or categoriesDropDown
+    def disableUI(self, event):
+        url = self.url.get()
+        somID = self.somNumber.get()
+        category = self.somListbox.curselection()
+        if url:
+            self.somNumber['state'] = DISABLED
+            self.somTypesDropDown['state'] = DISABLED
+            self.somListbox['state'] = DISABLED
+        elif somID:
+            self.url['state'] = DISABLED
+            self.somTypesDropDown['state'] = DISABLED
+            self.somListbox['state'] = DISABLED
+        elif category:
+            self.url['state'] = DISABLED
+            self.somNumber['state'] = DISABLED
+        else:
+            self.url['state'] = NORMAL
+            self.somNumber['state'] = NORMAL
+            self.somTypesDropDown['state'] = NORMAL
+            self.somListbox['state'] = NORMAL
 
 def reset():
     root.checkbar.clear()
@@ -298,6 +322,7 @@ def reset():
     root.branchList.delete(0, 'end')
     root.optionName.delete(0, 'end')
     root.optionValue.delete(0, 'end')
+    root.disableUI(root.event_generate("<FocusOut>"))
     
 def getOptions():
     options = ""
