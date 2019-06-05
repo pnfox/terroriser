@@ -224,9 +224,7 @@ class App(Tk):
         self.somTypesDropDown.grid(column=0, row=2, padx=20, sticky="EW")
         self.somTypesDropDown.tk_setPalette(background=COLOR)
         
-        checkbarFrame = ttk.Frame(self.content)
-        self.checkbar = CheckBar(checkbarFrame, [])
-        checkbarFrame.grid(column=3, row=3)
+        self.checkbar = CheckBar(self.content, [])
         self.somListbox = Listbox(self.content, exportselection=0, width=30, foreground=COLOR2)
         self.somListbox.grid(column=1, row=2, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
@@ -455,6 +453,7 @@ def updateSplits():
         return
  
     root.splits = findSplits(somID)
+    root.branchList.delete(0, 'end')
     insertListOptions(root.branchList, findBranches(somID))
     if root.splits:
         root.checkbar.clear()
