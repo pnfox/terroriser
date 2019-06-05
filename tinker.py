@@ -354,7 +354,7 @@ def okEvent():
         id = root.somNumber.get()
         if id:
             id = int(id)
-    except: ValueError:
+    except ValueError:
         root.label_message.set("Som number must be int")
     if (url and id) or (id and listSelected) or (url and listSelected):
         root.label_message.set("Confused!\n More than one som number found")
