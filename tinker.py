@@ -7,6 +7,7 @@ from multiprocessing import Process
 from json import JSONDecodeError
 
 import terroriser
+import soms
 
 tmpFiles = []
 
@@ -85,6 +86,11 @@ class CheckBar(Frame):
         self.vars = []
         self.checkboxes = []
         self.update(picks)
+        self.checkbox_scrollbar = Scrollbar(self)
+        self.checkbox_scrollbar.grid(row=0, column=1, sticky='NS')
+        self.box = Text(self, height=10, width=20)
+        self.box.grid(row=0, column=0)
+        self.checkbox_scrollbar.config(command=self.box.yview)
 
     def state(self):
         return map((lambda var: var.get()), self.vars)
@@ -93,107 +99,17 @@ class CheckBar(Frame):
         self.vars = []
         for pick in picks:
            var = IntVar()
-           chk = Checkbutton(self, text=pick, variable=var, bg="cyan")
-           chk.pack()
+           chk = Checkbutton(self.box, text=pick, variable=var, bg=COLOR)
+           self.box.window_create("end", window=chk)
+           self.box.insert("end", "\n")
            self.vars.append(var)
            self.checkboxes.append(chk)
+           self.box.configure(height=10)
+        self['height'] = 10
  
     def clear(self):
         for i in self.checkboxes:
             i.destroy()
-
-vmclone = {"Total duration of VM clones" : 33,
-           "Duration of nth VM clone" : 266}
-actDir = {"Duration of joining domain" : 458,
-          "Duration of leabin domain" : 459,
-          "Duration of CLI command" : 460,
-          "Duration of SSH command" : 461}
-apache = {"Apachebench measurement (per client)" : 308,
-          "Apachebench measurements (average across clients)" : 309,
-          "Apachebench measurements (median across requests)" : 310,
-          "Apachebench measurements (max across requests)" : 465}
-blackw = {"HTTP throughput" : 476,
-              "HTTP throughput (mean over time)" : 477,
-              "HTTP end-to-end" : 479,
-              "HTTP end-to-end" : 480,
-              "DNS req/sec" : 495,
-              "DNS req/sec (mean over time)" : 496,
-              "SSL encrypted throughput" : 483,
-              "SSL encrypted throughput (mean)" : 484,
-              "SSL TPS" : 486,
-              "SSL TPS (mean)" : 487,
-              "TCP Conn/sec" : 481,
-              "TCP Conn/sec (mean)" : 482}
-diskconc2 = {"Aggregate disk thoughput" : 389,
-             "Disk throughput" : 390,
-             "Maximum agg disk throughput" : 453,
-             "Aggregate IOPS" : 454,
-             "Min agg disk throughput single block-size" : 500}
-lmbench = {"Simple syscall" : 41,
-           "Simple read" : 42,
-           "Simple write" : 43,
-           "Simple stat" : 44,
-           "Simple fstat" : 45,
-           "Simple open/close" : 46,
-           "Signal handler installation" : 47,
-           "Signal handler overhead" : 48,
-           "Protection fault" : 49,
-           "Pipe latency" : 50,
-           "Pipe bandwidth" : 66,
-           "AF_UNIX sock stream latency" : 51,
-           "AF_UNIX sock stream bandwidth" : 65,
-           "Process fork+exit" : 52,
-           "Process fork+execve" : 53,
-           "Process fock+/bin/sh -c" : 54,
-           "Float bogomflops" : 55,
-           "Double bogomflops" : 56,
-           "File /local/scratch/XXX write bandwidth" : 57,
-           "Pagefaults on /local/scratch/XXX" : 58,
-           "UDP latency using localhost" : 59,
-           "TCP latency using localhost" : 60,
-           "61 RPC/udp latency using localhost" : 61,
-           "RPC/tcp latecy using localhost" : 62,
-           "TCP/IP connection cost to localhost" : 63,
-           "Average transfer" : 64,
-           "TLB size" : 67,
-           "Select on X fds" : 68,
-           "Select on X TCP fds" : 69,
-           "Filesystem latency (create ops per second)" : 70,
-           "Filesystem latency (delete ops per second)" : 71,
-           "Sock bandwidth using localhost" : 72,
-           "Read bandwidth" : 73,
-           "Read open2close bandwidth" : 74,
-           "Mmap read bandwidth" : 75,
-           "Mmap read open2close bandwidth" : 76,
-           "Libc bcopy unaligned" : 77,
-           "Libc bcopy aligned" : 78,
-           "Memory read bandwidth" : 82,
-           "Memory write bandwidth" : 84,
-           "Integer op" : 90,
-           "Int64 op" : 91,
-           "Float op" : 92,
-           "Double op" : 93,
-           "Integer op parallelism" : 94,
-           "Int64 op parallelism" : 95,
-           "Float op parallelism" : 96,
-           "Double op parallelism" : 97,
-           "Steam2 latency" : 99,
-           "Stream2 bandwidth" : 101} 
-
-
-soms = {"VM clone" : vmclone,
-        "Active Directory operations" : actDir,
-        "Apachebench" : apache,
-        "Blackwidow" : blackw,
-        "Diskconc2" : diskconc2,
-        "Lmbench" : lmbench}
-xaxis = {"branch": 0,
-         "product": 1,
-         "build_number": 2,
-         "build_date": 3,
-         "build_tag":4,
-         "job_id": 5}
-somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow", "Diskconc2", "Lmbench"]
 
 # Inserts dict key,value pairs to a listbox
 def insertListOptions(lbox, dict):
@@ -209,6 +125,13 @@ def insertListOptions(lbox, dict):
             v = dict.get(k)
             lbox.insert(v, k)
 
+class MoreOptions(Tk):
+    def __init__(self, listOptions):
+        Tk.__init__(self)
+        self.title("More options")
+        self.checkbuttons = CheckBar(self, listOptions)
+        self.checkbuttons.pack()
+
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
@@ -218,15 +141,14 @@ class App(Tk):
         ttk.Style().theme_use('clam')
 
         self.somTypeSelected = StringVar()
-        self.somTypeSelected.set(somTypes[0])
-        self.somTypesDropDown = OptionMenu(self.content, self.somTypeSelected, *somTypes, command=self.getSelection)
+        self.somTypeSelected.set(soms.somTypes[0])
+        self.somTypesDropDown = OptionMenu(self.content, self.somTypeSelected, *soms.somTypes, command=self.getSelection)
         self.somTypesDropDown.config(width=20)
         self.somTypesDropDown.grid(column=0, row=2, padx=20, sticky="EW")
         self.somTypesDropDown.tk_setPalette(background=COLOR)
-        
-        checkbarFrame = ttk.Frame(self.content)
-        self.checkbar = CheckBar(checkbarFrame, [])
-        checkbarFrame.grid(column=3, row=3)
+
+        self.checkbar = CheckBar(self, [])
+        self.checkbar.grid(column=2,row=2)
         self.somListbox = Listbox(self.content, exportselection=0, width=30, foreground=COLOR2)
         self.somListbox.grid(column=1, row=2, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
@@ -235,7 +157,7 @@ class App(Tk):
         
         Label(self.content, text="Xaxis:").grid(column=0, row=5)
         self.xaxisList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=5, background=COLOR, foreground=COLOR2)
-        insertListOptions(self.xaxisList, xaxis)
+        insertListOptions(self.xaxisList, soms.xaxis)
         self.xaxisList.grid(column=1, row=5, sticky=W)
 
         Label(self.content, text="SOM number:", background=COLOR, foreground=COLOR2).grid(column=0,row=1)
@@ -256,14 +178,8 @@ class App(Tk):
         self.info_box = Label(self.content, textvariable=self.label_message,height=4, width=5, padx=5, pady=5, bg=COLOR, fg=COLOR2)
         self.info_box.grid(column=1, row=9, columnspan=2, sticky='NSWE')
 
-        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
-        self.legend = IntVar()
-        self.legendOption = Checkbutton(self.content, variable=self.legend)
-        self.legendOption.grid(column=8,row=8)
-
-        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
-        self.linePlot = IntVar()
-        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
+        # Create matplotlib specific GUI
+        self.createGraphOptions()
 
         Label(self.content, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=4)
         self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=3, bg=COLOR, fg=COLOR2)
@@ -279,9 +195,23 @@ class App(Tk):
         graphButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
         cancelButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Quit", command=self.destroy)
 
-        graphButton.grid(column=7, row=10, sticky=E)
-        resetButton.grid(column=8, row=10, sticky=E)
-        cancelButton.grid(column=9,row=10, sticky=E)
+        graphButton.grid(column=7, row=11, sticky=E)
+        resetButton.grid(column=8, row=11, sticky=E)
+        cancelButton.grid(column=9,row=11, sticky=E)
+
+    def createGraphOptions(self):
+        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
+        self.legend = IntVar()
+        self.legendOption = Checkbutton(self.content, variable=self.legend)
+        self.legendOption.grid(column=8,row=8)
+
+        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
+        self.linePlot = IntVar()
+        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
+
+        Label(self.content, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=7, row=10)
+        self.yaxis0 = IntVar()
+        yaxis = Checkbutton(self.content, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=8, row=10)
 
     def onDouble(self, event):
         updateSplits()
@@ -291,7 +221,7 @@ class App(Tk):
         self.somTypeSelected.get()
         # update somListBox entries
         self.somListbox.delete(0, self.somListbox.size()-1)
-        s = soms.get(self.somTypeSelected.get())
+        s = soms.soms.get(self.somTypeSelected.get())
         insertListOptions(self.somListbox, s)
      
     def deselect(self, event):
@@ -306,23 +236,37 @@ class App(Tk):
         somID = self.somNumber.get()
         category = self.somListbox.curselection()
         if url:
+            self.url['background'] = COLOR
             self.somNumber['state'] = DISABLED
+            self.somNumber['background'] = "grey80"
             self.somTypesDropDown['state'] = DISABLED
             self.somListbox['state'] = DISABLED
+            self.somListbox['background'] = "grey80"
+            self.label_message.set("URL selected")
             self.deselect(None)
         elif somID:
+            self.somNumber['background'] = COLOR
             self.url['state'] = DISABLED
+            self.url['background'] = "grey80"
             self.somTypesDropDown['state'] = DISABLED
             self.somListbox['state'] = DISABLED
+            self.somListbox['background'] = "grey80"
             self.deselect(None)
+            self.label_message.set("SOM ID selected")
         elif category:
+            self.somListbox['background'] = COLOR
             self.url['state'] = DISABLED
+            self.url['background'] = "grey80"
             self.somNumber['state'] = DISABLED
+            self.somNumber['background'] = "grey80"
         else:
             self.url['state'] = NORMAL
+            self.url['background'] = COLOR
             self.somNumber['state'] = NORMAL
+            self.somNumber['background'] = COLOR
             self.somTypesDropDown['state'] = NORMAL
             self.somListbox['state'] = NORMAL
+            self.somListbox['background'] = COLOR
 
 def reset():
     root.checkbar.clear()
@@ -332,7 +276,15 @@ def reset():
     root.branchList.delete(0, 'end')
     root.optionName.delete(0, 'end')
     root.optionValue.delete(0, 'end')
-    
+    root.label_message.set("")
+    root.url['state'] = NORMAL
+    root.url['background'] = COLOR
+    root.somNumber['state'] = NORMAL
+    root.somNumber['background'] = COLOR
+    root.somTypesDropDown['state'] = NORMAL
+    root.somListbox['state'] = NORMAL
+    root.somListbox['background'] = COLOR
+
 def getOptions():
     options = ""
     checkbarStates = root.checkbar.vars
@@ -394,17 +346,18 @@ def okEvent():
         somID = id
         url = "http://rage/?p=som_data&id=" + str(somID) + getOptions() + options
     elif listSelected:
-        tmpDict = soms.get(root.somTypeSelected.get())
+        tmpDict = soms.soms.get(root.somTypeSelected.get())
         somID = tmpDict.get(root.somListbox.get(listSelected))
         if not somID:
             return
         root.label_message.set("Graphing data for SOM: " + str(somID))
         url = "http://rage/?p=som_data&id=" + str(somID) + options + getOptions()
     else:
-        root.label_message.set("Nothing to graph")
+        root.label_message.set("Nothing to graph\n\nIts possible data is not in RAGE anymore \
+                               or if tiny link is new please try again in a few minutes\n")
         return
 
-    config = [root.legend.get(), 0, root.linePlot.get()]
+    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get()]
     if root.branchList.curselection() or optionName == "branch":
         config[1] = 1
 
@@ -433,7 +386,7 @@ def updateSplits():
  
     root.label_message.set("Getting available branches")
     somID = None
-    tmpDict = soms.get(root.somTypeSelected.get())
+    tmpDict = soms.soms.get(root.somTypeSelected.get())
     category = tmpDict.get(root.somListbox.get(root.somListbox.curselection()))
     # if we have used Som Number TextBox
     id = root.somNumber.get()
@@ -461,11 +414,12 @@ def updateSplits():
         return
  
     root.splits = findSplits(somID)
+    root.branchList.delete(0, 'end')
     insertListOptions(root.branchList, findBranches(somID))
     if root.splits:
         root.checkbar.clear()
         root.checkbar.update(root.splits)
-        
+
 def parseTinyUrl(url):
     curl = ""
     t = None

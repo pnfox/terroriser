@@ -5,6 +5,9 @@ import operator
 import subprocess
 import matplotlib.pyplot as plt
 import requests
+import statistics
+
+import code
 
 points = []
 nPoints = 0
@@ -118,6 +121,30 @@ def order(a, b):
 
     return a, b
 
+# Given two lists we find the average point
+# if we have multiple points on a single x[i]
+# i.e. we have a straight vertical line in our plot
+# then find the mean average
+#
+# returns coordinates of points representing the average
+def findAverage(x, y):
+    assert(len(x)==len(y))
+    l = []
+    for i in range(len(x)):
+        l.append([x[i], y[i]])
+
+    values = set(map(lambda i:i[0], l))
+    newlist = [[j[1] for j in l if j[0]==i] for i in values]
+
+    l = []
+    for group in newlist:
+        if len(group) > 2:
+            avg = statistics.median(group)
+            xlocation = x[y.index(group[0])]
+            l.append([xlocation, avg])
+
+    return l
+
 # Given the dataPoints which contains cartesian positions and
 # also contains split configuration. Config contains user
 # input on how he/she wishes the graphs to be drawn
@@ -202,6 +229,10 @@ def drawGraph(dataPoints, config):
                         break
                 k += 1
 
+    def plotAvg(points):
+        for i in points:
+            plt.plot(i[0], i[1], marker="x", ms=10, color="black")
+
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
     global splitNames
@@ -257,7 +288,8 @@ def drawGraph(dataPoints, config):
 
             if showlegend:
                 if config[2] == 1:
-                    sc.append(plt.plot(tmpX, tmpY, label=group[i]))
+                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
             else:
@@ -266,20 +298,26 @@ def drawGraph(dataPoints, config):
                     if type(tmpX[0][0]) is list:
                         print("tmpX[0][0][0]: ", tmpX[0][0][0])
                 if config[2] == 1:
-                    sc.append(plt.plot(tmpX, tmpY))
+                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
+            plotAvg(findAverage(tmpX, tmpY))
+            
     # no color used
     else:
         if config[2] == 1:
             sc.append(plt.plot(x,y))
         else:
             sc.append(plt.scatter(x,y, s=pointSize))
+        plotAvg(findAverage(x,y))
     global xaxis; global yaxis
     plt.xlabel(xaxis)
     plt.ylabel(yaxis)
     cid = fig.canvas.mpl_connect("button_press_event", onclick)
 
+    if config[3] == 1:
+        ax.set_ylim(bottom=0)
     if showlegend:
         plt.legend()
     global som_name
