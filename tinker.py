@@ -230,6 +230,8 @@ class App(Tk):
         self.somListbox = Listbox(self.content, exportselection=0, width=30, foreground=COLOR2)
         self.somListbox.grid(column=1, row=2, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
+        self.somListbox.bind("<Button-1>", self.disableUI)
+        self.somListbox.bind("<Button-3>", self.deselect)
         
         Label(self.content, text="Xaxis:").grid(column=0, row=5)
         self.xaxisList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=5, background=COLOR, foreground=COLOR2)
@@ -239,12 +241,12 @@ class App(Tk):
         Label(self.content, text="SOM number:", background=COLOR, foreground=COLOR2).grid(column=0,row=1)
         self.somNumber = Entry(self.content, width=30 ,bd=2)
         self.somNumber.grid(column=1, row=1)
-        self.somNumber.bind("<FocusOut>", self.disableUI)
+        self.somNumber.bind("<Button-1>", self.disableUI)
 
         Label(self.content, text="URL: ", background=COLOR, foreground=COLOR2).grid(column=0, row=0)
         self.url = Entry(self.content, width=30, bd=2)
         self.url.grid(column=1, row=0)
-        self.url.bind("<FocusOut>", self.disableUI)
+        self.url.bind("<Button-1>", self.disableUI)
 
         #splitsButton = Button(leftFrame, text="Update GUI", command=updateSplits, bg=COLOR, fg=COLOR2)
         #splitsButton.grid(column=1, row=2)
@@ -291,6 +293,12 @@ class App(Tk):
         self.somListbox.delete(0, self.somListbox.size()-1)
         s = soms.get(self.somTypeSelected.get())
         insertListOptions(self.somListbox, s)
+     
+    def deselect(self, event):
+        for i in self.somListbox.curselection():
+            self.somListbox.select_clear(i)
+        if event:
+            root.disableUI(None)
         
     # If URL is used then dont let user use somID Entry box or categoriesDropDown
     def disableUI(self, event):
@@ -301,10 +309,12 @@ class App(Tk):
             self.somNumber['state'] = DISABLED
             self.somTypesDropDown['state'] = DISABLED
             self.somListbox['state'] = DISABLED
+            self.deselect(None)
         elif somID:
             self.url['state'] = DISABLED
             self.somTypesDropDown['state'] = DISABLED
             self.somListbox['state'] = DISABLED
+            self.deselect(None)
         elif category:
             self.url['state'] = DISABLED
             self.somNumber['state'] = DISABLED
@@ -322,7 +332,6 @@ def reset():
     root.branchList.delete(0, 'end')
     root.optionName.delete(0, 'end')
     root.optionValue.delete(0, 'end')
-    root.disableUI(root.event_generate("<FocusOut>"))
     
 def getOptions():
     options = ""
