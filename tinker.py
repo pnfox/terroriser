@@ -320,23 +320,37 @@ class App(Tk):
         somID = self.somNumber.get()
         category = self.somListbox.curselection()
         if url:
+            self.url['background'] = COLOR
             self.somNumber['state'] = DISABLED
+            self.somNumber['background'] = "grey80"
             self.somTypesDropDown['state'] = DISABLED
             self.somListbox['state'] = DISABLED
+            self.somListbox['background'] = "grey80"
+            self.label_message.set("URL selected")
             self.deselect(None)
         elif somID:
+            self.somNumber['background'] = COLOR
             self.url['state'] = DISABLED
+            self.url['background'] = "grey80"
             self.somTypesDropDown['state'] = DISABLED
             self.somListbox['state'] = DISABLED
+            self.somListbox['background'] = "grey80"
             self.deselect(None)
+            self.label_message.set("SOM ID selected")
         elif category:
+            self.somListbox['background'] = COLOR
             self.url['state'] = DISABLED
+            self.url['background'] = "grey80"
             self.somNumber['state'] = DISABLED
+            self.somNumber['background'] = "grey80"
         else:
             self.url['state'] = NORMAL
+            self.url['background'] = COLOR
             self.somNumber['state'] = NORMAL
+            self.somNumber['background'] = COLOR
             self.somTypesDropDown['state'] = NORMAL
             self.somListbox['state'] = NORMAL
+            self.somListbox['background'] = COLOR
 
 def reset():
     root.checkbar.clear()
@@ -346,7 +360,15 @@ def reset():
     root.branchList.delete(0, 'end')
     root.optionName.delete(0, 'end')
     root.optionValue.delete(0, 'end')
-    
+    root.label_message.set("")
+    root.url['state'] = NORMAL
+    root.url['background'] = COLOR
+    root.somNumber['state'] = NORMAL
+    root.somNumber['background'] = COLOR
+    root.somTypesDropDown['state'] = NORMAL
+    root.somListbox['state'] = NORMAL
+    root.somListbox['background'] = COLOR
+
 def getOptions():
     options = ""
     checkbarStates = root.checkbar.vars
