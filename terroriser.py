@@ -277,6 +277,8 @@ def drawGraph(dataPoints, config):
     plt.ylabel(yaxis)
     cid = fig.canvas.mpl_connect("button_press_event", onclick)
 
+    if config[3] == 1:
+        ax.set_ylim(bottom=0)
     if showlegend:
         plt.legend()
     global som_name

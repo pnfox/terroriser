@@ -178,14 +178,8 @@ class App(Tk):
         self.info_box = Label(self.content, textvariable=self.label_message,height=4, width=5, padx=5, pady=5, bg=COLOR, fg=COLOR2)
         self.info_box.grid(column=1, row=9, columnspan=2, sticky='NSWE')
 
-        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
-        self.legend = IntVar()
-        self.legendOption = Checkbutton(self.content, variable=self.legend)
-        self.legendOption.grid(column=8,row=8)
-
-        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
-        self.linePlot = IntVar()
-        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
+        # Create matplotlib specific GUI
+        self.createGraphOptions()
 
         Label(self.content, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=4)
         self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=3, bg=COLOR, fg=COLOR2)
@@ -201,9 +195,23 @@ class App(Tk):
         graphButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
         cancelButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Quit", command=self.destroy)
 
-        graphButton.grid(column=7, row=10, sticky=E)
-        resetButton.grid(column=8, row=10, sticky=E)
-        cancelButton.grid(column=9,row=10, sticky=E)
+        graphButton.grid(column=7, row=11, sticky=E)
+        resetButton.grid(column=8, row=11, sticky=E)
+        cancelButton.grid(column=9,row=11, sticky=E)
+
+    def createGraphOptions(self):
+        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
+        self.legend = IntVar()
+        self.legendOption = Checkbutton(self.content, variable=self.legend)
+        self.legendOption.grid(column=8,row=8)
+
+        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
+        self.linePlot = IntVar()
+        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
+
+        Label(self.content, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=7, row=10)
+        self.yaxis0 = IntVar()
+        yaxis = Checkbutton(self.content, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=8, row=10)
 
     def onDouble(self, event):
         updateSplits()
@@ -339,10 +347,11 @@ def okEvent():
         root.label_message.set("Graphing data for SOM: " + str(somID))
         url = "http://rage/?p=som_data&id=" + str(somID) + options + getOptions()
     else:
-        root.label_message.set("Nothing to graph")
+        root.label_message.set("Nothing to graph\n\nIts possible data is not in RAGE anymore \
+                               or if tiny link is new please try again in a few minutes\n")
         return
 
-    config = [root.legend.get(), 0, root.linePlot.get()]
+    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get()]
     if root.branchList.curselection() or optionName == "branch":
         config[1] = 1
 
