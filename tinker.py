@@ -85,6 +85,11 @@ class CheckBar(Frame):
         self.vars = []
         self.checkboxes = []
         self.update(picks)
+        self.checkbox_scrollbar = Scrollbar(self)
+        self.checkbox_scrollbar.grid(row=0, column=1, sticky='NS')
+        self.box = Text(self, height=10, width=20)
+        self.box.grid(row=0, column=0)
+        self.checkbox_scrollbar.config(command=self.box.yview)
 
     def state(self):
         return map((lambda var: var.get()), self.vars)
@@ -93,10 +98,13 @@ class CheckBar(Frame):
         self.vars = []
         for pick in picks:
            var = IntVar()
-           chk = Checkbutton(self, text=pick, variable=var, bg="cyan")
+           chk = Checkbutton(self.box, text=pick, variable=var, bg=COLOR)
+           self.box.window_create("end", window=chk)
+           self.box.insert("end", "\n")
            chk.pack()
            self.vars.append(var)
            self.checkboxes.append(chk)
+           self.box.configure(height=10)
  
     def clear(self):
         for i in self.checkboxes:
@@ -180,7 +188,6 @@ lmbench = {"Simple syscall" : 41,
            "Steam2 latency" : 99,
            "Stream2 bandwidth" : 101} 
 
-
 soms = {"VM clone" : vmclone,
         "Active Directory operations" : actDir,
         "Apachebench" : apache,
@@ -193,7 +200,8 @@ xaxis = {"branch": 0,
          "build_date": 3,
          "build_tag":4,
          "job_id": 5}
-somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow", "Diskconc2", "Lmbench"]
+somTypes = ["VM clone", "Active Directory operations", "Apachebench", "Blackwidow",
+            "Diskconc2", "Lmbench"]
 
 # Inserts dict key,value pairs to a listbox
 def insertListOptions(lbox, dict):
@@ -209,6 +217,13 @@ def insertListOptions(lbox, dict):
             v = dict.get(k)
             lbox.insert(v, k)
 
+class MoreOptions(Tk):
+    def __init__(self, listOptions):
+        Tk.__init__(self)
+        self.title("More options")
+        self.checkbuttons = CheckBar(self, listOptions)
+        self.checkbuttons.pack()
+
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
@@ -223,8 +238,9 @@ class App(Tk):
         self.somTypesDropDown.config(width=20)
         self.somTypesDropDown.grid(column=0, row=2, padx=20, sticky="EW")
         self.somTypesDropDown.tk_setPalette(background=COLOR)
-        
-        self.checkbar = CheckBar(self.content, [])
+
+        self.checkbar = CheckBar(self, [])
+        self.checkbar.grid(column=2,row=2)
         self.somListbox = Listbox(self.content, exportselection=0, width=30, foreground=COLOR2)
         self.somListbox.grid(column=1, row=2, sticky=W)
         self.somListbox.bind("<Double-Button-1>", self.onDouble)
@@ -458,7 +474,7 @@ def updateSplits():
     if root.splits:
         root.checkbar.clear()
         root.checkbar.update(root.splits)
-        
+
 def parseTinyUrl(url):
     curl = ""
     t = None
