@@ -258,12 +258,14 @@ def drawGraph(dataPoints, config):
 
             if showlegend:
                 if config[2] == 1:
-                    sc.append(plt.plot(tmpX, tmpY, label=group[i]))
+                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
             else:
                 if config[2] == 1:
-                    sc.append(plt.plot(tmpX, tmpY))
+                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
     # no color used
