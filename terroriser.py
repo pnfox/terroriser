@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import requests
 import statistics
 
-import code
-
 points = []
 nPoints = 0
 numOfSplits = 0
@@ -303,7 +301,7 @@ def drawGraph(dataPoints, config):
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
             plotAvg(findAverage(tmpX, tmpY))
-            
+
     # no color used
     else:
         if config[2] == 1:
