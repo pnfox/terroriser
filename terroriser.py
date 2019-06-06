@@ -346,6 +346,44 @@ def group_data(dataPoints, config):
 
     return x, y, group
 
+def group_data(dataPoints, config):
+    # if we have chosen to split then plot multiple graphs
+    global numOfSplits
+    global splitNames
+    global regression
+    x = []; y = []; group = []
+    if numOfSplits > 1 or config[1]:
+        global axisPos
+        for p in dataPoints:
+            # collect different x,y's of each split value, excluding xaxis
+            # s will be the str concat of all splitIndentifies from json2points()
+            s = ""
+            for i in range(numOfSplits):
+                if i in axisPos:
+                    # if we used branch list (assuming this is also xaxis value)
+                    # or we branch was other option field
+                    # then dont continue as we want to color different branches
+                    if config[1] == 0:
+                        continue
+                if regression:
+                    s += str(p[3]) + "\n"
+                else:
+                    s += str(p[i+3]) + "\n"
+            try:
+                position = group.index(s)
+                x[position].append((p[0], p[1]))
+                y[position].append((p[0], p[2]))
+            except:
+                # didnt match
+                group.append(s)
+                x.append([]); y.append([])
+
+    elif numOfSplits == 1:
+        for p in dataPoints:
+            x.append(p[1])
+            y.append(p[2])
+
+    return x, y, group
 
 # Gets data from rage given a url then uses json2points
 # to parse data into python structures
