@@ -179,7 +179,7 @@ class App(Tk):
         self.info_box.grid(column=1, row=9, columnspan=2, sticky='NSWE')
 
         # Create matplotlib specific GUI
-        self.createGraphOptions()
+        gOptions = self.createGraphOptions()
 
         Label(self.content, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=4)
         self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=3, bg=COLOR, fg=COLOR2)
@@ -195,23 +195,32 @@ class App(Tk):
         graphButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
         cancelButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Quit", command=self.destroy)
 
+        gOptions.grid(column=7, row=8, columnspan=3, rowspan=2)
+
         graphButton.grid(column=7, row=11, sticky=E)
         resetButton.grid(column=8, row=11, sticky=E)
         cancelButton.grid(column=9,row=11, sticky=E)
 
     def createGraphOptions(self):
-        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
+        graphOptions = ttk.Frame(self.content)
+        Label(graphOptions, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=0, row=0)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(self.content, variable=self.legend)
-        self.legendOption.grid(column=8,row=8)
+        self.legendOption = Checkbutton(graphOptions, variable=self.legend)
+        self.legendOption.grid(column=1,row=0)
 
-        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
+        Label(graphOptions, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=0, row=1)
         self.linePlot = IntVar()
-        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
+        line = Checkbutton(graphOptions, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=1, row=1)
 
-        Label(self.content, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=7, row=10)
+        Label(graphOptions, text="Show averages: ", background=COLOR, foreground=COLOR2).grid(column=0, row=2)
+        self.avgPlot = IntVar()
+        line = Checkbutton(graphOptions, variable=self.avgPlot, bg=COLOR, fg=COLOR2).grid(column=1, row=2)
+
+        Label(graphOptions, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=0, row=3)
         self.yaxis0 = IntVar()
-        yaxis = Checkbutton(self.content, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=8, row=10)
+        yaxis = Checkbutton(graphOptions, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=1, row=3)
+
+        return graphOptions
 
     def onDouble(self, event):
         updateSplits()
@@ -357,7 +366,7 @@ def okEvent():
                                or if tiny link is new please try again in a few minutes\n")
         return
 
-    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get()]
+    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get(), root.avgPlot.get()]
     if root.branchList.curselection() or optionName == "branch":
         config[1] = 1
 
