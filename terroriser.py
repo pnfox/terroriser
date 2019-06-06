@@ -259,7 +259,7 @@ def drawGraph(x, y, groupNames, config):
 
             if showlegend:
                 if config[2] == 1:
-                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    plot = plt.plot(tmpX, tmpY, label=groupNames[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, label=groupNames[i]))
@@ -269,7 +269,7 @@ def drawGraph(x, y, groupNames, config):
                     if type(tmpX[0][0]) is list:
                         print("tmpX[0][0][0]: ", tmpX[0][0][0])
                 if config[2] == 1:
-                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    plot = plt.plot(tmpX, tmpY, label=groupNames[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 else:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
