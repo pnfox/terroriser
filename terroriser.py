@@ -367,10 +367,11 @@ def analyseData(url, config):
             splitChoice.append(i)
             config[1] = 1
     # no splits from gui so default splits
-    if len(re.findall(r'&v_branch=', url)) > 1:
-        splitChoice.append('branch')
     else:
         splitChoice = ['branch']
+
+    if len(re.findall(r'&v_branch=', url)) > 1 and 'branch' not in splitChoice:
+        splitChoice.append('branch')
 
     global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)

@@ -394,7 +394,7 @@ def okEvent():
 
     config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get(), \
               root.showAvg.get(), root.avgPlot.get()]
-    if root.branchList.curselection() or optionName == "branch":
+    if root.branchList.curselection() or "v_branch" in options:
         config[1] = 1
     if root.avgPlot.get():
         config[2] = -1
