@@ -45,7 +45,7 @@ class TerroriserError(Exception):
 def json2points(f):
     json_data=f.read()
     if len(json_data.split()) == 0:
-        raise TerroriserError("No data found")
+        return None
     # will return exception when cant parse json
     # data is a python dict
     data = json.loads(json_data)
@@ -321,6 +321,7 @@ def drawGraph(x, y, groupNames, config):
     global som_name
     plt.title(som_name)
     try:
+        print("COMPLETE")
         plt.show()
         fig.canvas.mpl_disconnect(cid)
     except e:
@@ -366,9 +367,10 @@ def group_data(dataPoints, config):
     return x, y, group
 
 
-# Main entry point when being called from tinker.py
-# parses the json file then plots graph
-def analyseData(url, config, regre = False):
+
+# Gets data from rage given a url then uses json2points
+# to parse data into python structures
+def getData(url, config, regre = False):
 
     initialize()
     global regression
@@ -391,6 +393,7 @@ def analyseData(url, config, regre = False):
     if len(re.findall(r'&v_branch=', url)) > 1 and 'branch' not in splitChoice:
         splitChoice.append('branch')
 
+    print("Fetching data.......", end='', flush=True)
     global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)
     dir = os.getcwd()
@@ -402,14 +405,16 @@ def analyseData(url, config, regre = False):
         response.raise_for_status()
         with open(dir + "\\somdata" + str(somID), "w+") as h:
             h.write(str((response.content).decode('utf-8')))
-    print("Fetched data")
     if os.name == "posix":
         raw = open("/tmp/somdata" + str(somID))
     if os.name == "nt":
         raw = open(dir + "\\somdata" + str(somID))
+    print("COMPLETE")
+    print("Parsing JSON data......", end='', flush=True)
     points = json2points(raw)
     if not points:
-        return None
+        print("No data found")
+        raise TerroriserError("No data found")
 
     # Get som name
     if os.name == "posix":
@@ -420,10 +425,13 @@ def analyseData(url, config, regre = False):
         global som_name
         som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
 
-    x, y, groupNames = group_data(points, config)
+    print("COMPLETE")
+    return points
+    
+# Main entry point for the tinker program
+def tinkerEntryPoint(url, config):
 
-    if regression:
-        return x, y
-    else:
-        # Start drawing
-        drawGraph(x, y, groupNames, config)
+    p = getData(url, config, False)
+    x, y, groupNames = group_data(p, config)
+    print("Plotting data.........", end='', flush=True)
+    drawGraph(x, y, groupNames, config)
