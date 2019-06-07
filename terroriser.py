@@ -28,6 +28,7 @@ def initialize():
     global xaxisChoice
     global xaxis
     global yaxis
+    global regression
     points = []
     nPoints = 0
     numOfSplits = 0
@@ -44,7 +45,7 @@ class TerroriserError(Exception):
 def json2points(f):
     json_data=f.read()
     if len(json_data.split()) == 0:
-        raise TerroriserError("No data found")
+        return None
     # will return exception when cant parse json
     # data is a python dict
     data = json.loads(json_data)
@@ -91,8 +92,12 @@ def json2points(f):
             for v in dict.values():
                 results[j].append(v)
         else:
-            for split in splitChoice:
-                results[j].append(dict.get(split))
+            global regression
+            if regression:
+                results[j].append(dict.get("branch"))
+            else:
+                for split in splitChoice:
+                    results[j].append(dict.get(split))
         j = j + 1
     global nPoints
     nPoints = j
@@ -154,7 +159,7 @@ def findAverage(x, y):
 # Given the dataPoints which contains cartesian positions and
 # also contains split configuration. Config contains user
 # input on how he/she wishes the graphs to be drawn
-def drawGraph(dataPoints, config):
+def drawGraph(x, y, groupNames, config):
 
     showlegend = config[0]
 
@@ -241,38 +246,6 @@ def drawGraph(dataPoints, config):
         else:
             plt.plot(xOfAvg, avg, marker="x", ms=10, mec='black', mfc='black', label=label)
 
-    # if we have chosen to split then plot multiple graphs
-    global numOfSplits
-    global splitNames
-    x = []; y = []; group = []
-    if numOfSplits > 1 or config[1]:
-        global axisPos
-        for p in dataPoints:
-            # collect different x,y's of each split value, excluding xaxis
-            # s will be the str concat of all splitIndentifies from json2points()
-            s = ""
-            for i in range(numOfSplits):
-                if i in axisPos:
-                    # if we used branch list (assuming this is also xaxis value)
-                    # or we branch was other option field
-                    # then dont continue as we want to color different branches
-                    if config[1] == 0:
-                        continue
-                s += p[i+3] + "\n"
-            try:
-                position = group.index(s)
-                x[position].append((p[0], p[1]))
-                y[position].append((p[0], p[2]))
-            except:
-                # didnt match
-                group.append(s)
-                x.append([]); y.append([])
-
-    elif numOfSplits == 1:
-        for p in dataPoints:
-            x.append(p[1])
-            y.append(p[2])
-
     global nPoints
     pointSize=250/(nPoints)**0.35
     sc = []
@@ -297,13 +270,13 @@ def drawGraph(dataPoints, config):
             if showlegend:
                 if config[5] == 1:
                     xOfAvg, avg = order(findAverage(tmpX, tmpY))
-                    plotAvg(xOfAvg, avg, label=group[i], line=True)
+                    plotAvg(xOfAvg, avg, label=groupNames[i], line=True)
                     continue
                 elif config[2] == 1:
-                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    plot = plt.plot(tmpX, tmpY, label=groupNames[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 if config[2] == 0:
-                    sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
+                    sc.append(plt.scatter(tmpX, tmpY, label=groupNames[i]))
             else:
                 if type(tmpX[0]) is list:
                     print("tmpX[0][0]: ", tmpX[0][0])
@@ -314,7 +287,7 @@ def drawGraph(dataPoints, config):
                     plotAvg(xOfAvg, avg, line=True)
                     continue
                 elif config[2] == 1:
-                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    plot = plt.plot(tmpX, tmpY, label=groupNames[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 if config[2] == 0:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
@@ -348,20 +321,67 @@ def drawGraph(dataPoints, config):
     global som_name
     plt.title(som_name)
     try:
+        print("COMPLETE")
         plt.show()
         fig.canvas.mpl_disconnect(cid)
     except e:
         raise TerroriserError("Couldn't plot graph")
 
-# Main entry point when being called from tinker.py
-# parses the json file then plots graph
-def analyseData(url, config):
+def group_data(dataPoints, config):
+    # if we have chosen to split then plot multiple graphs
+    global numOfSplits
+    global splitNames
+    global regression
+    x = []; y = []; group = []
+    if numOfSplits > 1 or config[1]:
+        global axisPos
+        for p in dataPoints:
+            # collect different x,y's of each split value, excluding xaxis
+            # s will be the str concat of all splitIndentifies from json2points()
+            s = ""
+            for i in range(numOfSplits):
+                if i in axisPos:
+                    # if we used branch list (assuming this is also xaxis value)
+                    # or we branch was other option field
+                    # then dont continue as we want to color different branches
+                    if config[1] == 0:
+                        continue
+                if regression:
+                    s += p[3] + "\n"
+                else:
+                    s += str(p[i+3]) + "\n"
+            try:
+                position = group.index(s)
+                x[position].append((p[0], p[1]))
+                y[position].append((p[0], p[2]))
+            except:
+                # didnt match
+                group.append(s)
+                x.append([]); y.append([])
+
+    elif numOfSplits == 1:
+        for p in dataPoints:
+            x.append(p[1])
+            y.append(p[2])
+
+    return x, y, group
+
+
+
+# Gets data from rage given a url then uses json2points
+# to parse data into python structures
+def getData(url, config, regre = False):
 
     initialize()
+    global regression
+    regression = regre
     global splitChoice
     print(url)
     somID = re.search(r"id=(\d+)", url).group(1)
-    splits = re.findall(r'&f_(\w+)=1', url)
+    if regression:
+        splits = re.findall(r'v_branch=(\w+\%?2?\w+\%?2?\w+)&', url)
+    else:
+        splits = re.findall(r'&f_(\w+)=1', url)
     if splits:
         for i in splits:
             splitChoice.append(i)
@@ -373,6 +393,7 @@ def analyseData(url, config):
     if len(re.findall(r'&v_branch=', url)) > 1 and 'branch' not in splitChoice:
         splitChoice.append('branch')
 
+    print("Fetching data.......", end='', flush=True)
     global xaxisChoice
     xaxisChoice = re.findall(r'xaxis=(\w+)', url)
     dir = os.getcwd()
@@ -384,14 +405,16 @@ def analyseData(url, config):
         response.raise_for_status()
         with open(dir + "\\somdata" + str(somID), "w+") as h:
             h.write(str((response.content).decode('utf-8')))
-    print("Fetched data")
     if os.name == "posix":
         raw = open("/tmp/somdata" + str(somID))
     if os.name == "nt":
         raw = open(dir + "\\somdata" + str(somID))
+    print("COMPLETE")
+    print("Parsing JSON data......", end='', flush=True)
     points = json2points(raw)
     if not points:
-        return None
+        print("No data found")
+        raise TerroriserError("No data found")
 
     # Get som name
     if os.name == "posix":
@@ -402,5 +425,13 @@ def analyseData(url, config):
         global som_name
         som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
 
-    # Start drawing
-    drawGraph(points, config)
+    print("COMPLETE")
+    return points
+    
+# Main entry point for the tinker program
+def tinkerEntryPoint(url, config):
+
+    p = getData(url, config, False)
+    x, y, groupNames = group_data(p, config)
+    print("Plotting data.........", end='', flush=True)
+    drawGraph(x, y, groupNames, config)
