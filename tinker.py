@@ -179,39 +179,62 @@ class App(Tk):
         self.info_box.grid(column=1, row=9, columnspan=2, sticky='NSWE')
 
         # Create matplotlib specific GUI
-        self.createGraphOptions()
+        gOptions = self.createGraphOptions()
 
         Label(self.content, text="Branch:", background=COLOR, foreground=COLOR2).grid(column=0,row=4)
         self.branchList = Listbox(self.content, selectmode=MULTIPLE, exportselection=0, width=30, height=3, bg=COLOR, fg=COLOR2)
         insertListOptions(self.branchList, [])
         self.branchList.grid(column=1, row=4)
-        Label(self.content, text="Other option:", background=COLOR, foreground=COLOR2).grid(column=0, row=6)
-        self.optionName = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
-        self.optionValue = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
-        self.optionName.grid(column=1, row=6)
-        self.optionValue.grid(column=2, row=6)
+
+        self.createOtherOptions()
 
         resetButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Reset", command=reset)
         graphButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Graph", command=okEvent)
         cancelButton = Button(self.content, bg=COLOR, fg=COLOR2, text="Quit", command=self.destroy)
 
+        gOptions.grid(column=7, row=8, columnspan=3, rowspan=2)
+
         graphButton.grid(column=7, row=11, sticky=E)
         resetButton.grid(column=8, row=11, sticky=E)
         cancelButton.grid(column=9,row=11, sticky=E)
 
+    def createOtherOptions(self):
+        Label(self.content, text="Other option 1:", background=COLOR, foreground=COLOR2).grid(column=0, row=6)
+        self.optionName1 = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionValue1 = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionName1.grid(column=1, row=6)
+        self.optionValue1.grid(column=2, row=6)
+
+        Label(self.content, text="Other option 2:", background=COLOR, foreground=COLOR2).grid(column=0, row=7)
+        self.optionName2 = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionValue2 = Entry(self.content, bd=2, bg=COLOR, fg=COLOR2)
+        self.optionName2.grid(column=1, row=7)
+        self.optionValue2.grid(column=2, row=7)
+
     def createGraphOptions(self):
-        Label(self.content, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=7, row=8)
+        graphOptions = ttk.Frame(self.content)
+        Label(graphOptions, text="Show legend:", background=COLOR, foreground=COLOR2).grid(column=0, row=0)
         self.legend = IntVar()
-        self.legendOption = Checkbutton(self.content, variable=self.legend)
-        self.legendOption.grid(column=8,row=8)
+        self.legendOption = Checkbutton(graphOptions, variable=self.legend)
+        self.legendOption.grid(column=1,row=0)
 
-        Label(self.content, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=7, row=9)
+        Label(graphOptions, text="Line plot: ", background=COLOR, foreground=COLOR2).grid(column=0, row=1)
         self.linePlot = IntVar()
-        line = Checkbutton(self.content, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=8, row=9)
+        line = Checkbutton(graphOptions, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=1, row=1)
 
-        Label(self.content, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=7, row=10)
+        Label(graphOptions, text="Show averages: ", background=COLOR, foreground=COLOR2).grid(column=0, row=2)
+        self.showAvg = IntVar()
+        line = Checkbutton(graphOptions, variable=self.showAvg, bg=COLOR, fg=COLOR2).grid(column=1, row=2)
+
+        Label(graphOptions, text="Plot averages only: ", background=COLOR, foreground=COLOR2).grid(column=0, row=3)
+        self.avgPlot = IntVar()
+        line = Checkbutton(graphOptions, variable=self.avgPlot, bg=COLOR, fg=COLOR2).grid(column=1, row=3)
+
+        Label(graphOptions, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=0, row=4)
         self.yaxis0 = IntVar()
-        yaxis = Checkbutton(self.content, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=8, row=10)
+        yaxis = Checkbutton(graphOptions, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=1, row=4)
+
+        return graphOptions
 
     def onDouble(self, event):
         updateSplits()
@@ -274,8 +297,10 @@ def reset():
     root.url.delete(0, len(root.url.get()))
     root.somNumber.delete(0, len(root.somNumber.get()))
     root.branchList.delete(0, 'end')
-    root.optionName.delete(0, 'end')
-    root.optionValue.delete(0, 'end')
+    root.optionName1.delete(0, 'end')
+    root.optionValue1.delete(0, 'end')
+    root.optionName2.delete(0, 'end')
+    root.optionValue2.delete(0, 'end')
     root.label_message.set("")
     root.url['state'] = NORMAL
     root.url['background'] = COLOR
@@ -295,6 +320,21 @@ def getOptions():
             options += "&f_" + root.splits[j] + "=1"
         j = j + 1
     return options
+
+# parse data from "Other option" GUI
+def parseOtherOptions():
+
+    s = ""
+    for element in [[root.optionName1, root.optionValue1], [root.optionName2, root.optionValue2]]:
+        # parse other option textbox fields
+        optionName = element[0].get()
+        optionValue = element[1].get()
+        if optionName and optionValue:
+            for i in optionValue.split(","):
+                i = i.replace("/", "%2F")
+                s += "&v_" + optionName + "=" + i
+
+    return s
 
 def okEvent():
     options = ""
@@ -321,13 +361,8 @@ def okEvent():
         branch = root.branchList.get(i).replace("/", "%2F")
         options += "&v_branch=" + branch
 
-    # parse other option textbox fields
-    optionName = root.optionName.get()
-    optionValue = root.optionValue.get()
-    if optionName and optionValue:
-        for i in optionValue.split(","):
-            i = i.replace("/", "%2F")
-            options += "&v_" + optionName + "=" + i
+    # parse user input from "other option" UI
+    options += parseOtherOptions()
 
     if url:
         # we use url from url TextBox, check validation
@@ -357,14 +392,17 @@ def okEvent():
                                or if tiny link is new please try again in a few minutes\n")
         return
 
-    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get()]
-    if root.branchList.curselection() or optionName == "branch":
+    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get(), \
+              root.showAvg.get(), root.avgPlot.get()]
+    if root.branchList.curselection() or "v_branch" in options:
         config[1] = 1
+    if root.avgPlot.get():
+        config[2] = -1
 
     try:
         # start graphing
         root.label_message.set("Starting to graph")
-        p = Process(target=terroriser.analyseData(url, config), args=(url, config, ))
+        p = Process(target=terroriser.tinkerEntryPoint(url, config), args=(url, config, ))
         p.start()
         p.join()
         root.label_message.set("")
