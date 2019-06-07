@@ -14,7 +14,7 @@ import terroriser
 import code
 
 def cleanString(string):
-    return string.replace("/", "%2f")
+    return string.replace("/", "%2F")
 
 def getUserArguments():
     parser = argparse.ArgumentParser()
@@ -27,10 +27,10 @@ def getUserArguments():
     return parser.parse_args()
 
 def ordinalEncode(data):
-    
+
     encoder = preprocessing.OrdinalEncoder()
     encodedData = encoder.fit_transform(data)
-    
+
     return encodedData
 
 # Used on arrays which store all point information
@@ -44,65 +44,21 @@ def preprocessData(data):
 
     newData = []
     tmp = []
-    
+
     for i in data:
         tmp.append(i[3:])
     tmp = ordinalEncode(tmp)
     assert len(tmp) == len(data)
- 
+
     entry = []
     for i in range(len(data)):
         entry = [data[i][0], data[i][1], data[i][2]] + list(tmp[i])
         newData.append(entry)
-    
+
     return newData
 
-# Main function for regression analysis
-if __name__=="__main__":
-
-    args = getUserArguments()
-
-    comparisonBranch = cleanString(args.baseline)
-    userBranch = cleanString(args.branch)
-
-    loginVSImax = "http://rage/?p=som_data&id=33&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
-    passmarkCPUScore = "http://rage/?p=som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
-    passmarkDiskMark = "http://rage/?p=som_data&id=565&xaxis=branch&xaxis=build_number&xaxis=build_date&auto_redraw=on&v_product=XenServer&v_product=XenServer-Transformer&f_branch=1" \
-        "&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&v_build_tag=all_hotfixes" \
-        "&v_build_tag=all_hotfixes%2Chttp%3A%2F%2Fcoltrane.uk.xensource.com%2Fusr%2Fgroups%2Fbuild" \
-        "%2Fdundee-lcm%2F513036%2Fhotfix-XS70E068%2FXS70E068.xsupdate%2Chttps%3A%2F%2Frepo.citrite.net" \
-        "%2Fxs-local-release-candidate%2FXenServer-7.x%2FXS-7.6%2Fupdates%2FXS76E004-UPD-484%2F24%2FXS76E004.iso" \
-        "%2Chttps%3A%2F%2Frepo.citrite.net%2Fxs-local-release-candidate%2FXenServer-7.x%2FXS-7.1.2%2Fupdates" \
-        "%2FXS71ECU2008-UPD-482%2F48%2FXS71ECU2008.iso%2Chttps%3A%2F%2Frepo.citrite.net%2Fxs-local-release-candidate" \
-        "%2FXenServer-8.x%2FXS-8.0%2Fupdates%2FXS80E001-UPD-483%2F21%2FXS80E001.iso&v_build_tag=all_hotfixes" \
-        "%2Cmandiant_installed%2Chttps%3A%2F%2Frepo.citrite.net%2Flist%2Fxs-local-assembly%2Fxenserver%2Frelease" \
-        "%2Fhavana%2FUPD-482%2F41%2FXS71ECU2008.iso&v_distro=win10-x64&v_vm_ram=8192&v_vcpus=4&v_postinstall=installDrivers"
-    durationOfNthVMClone = "http://rage/?p=som_data&id=266&xaxix=branch&xaxis=build_date&f_branch=1&f_build_date=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
-    
-    
-    config = [0,1,0]
-    try:
-        # groupedX takes the form of an array of arrays
-        # with each subarray being data of a particular branch
-        # groupedX also contains pointID
-        print("Getting data...")
-        p = terroriser.getData(passmarkDiskMark, config, True)
-        p_encoded = preprocessData(p)
-        code.interact(local=locals())
-        groupedX, groupedY, labels = terroriser.group_data(p, config)
-        assert(len(groupedX) == len(groupedY))
-
-    except TypeError:
-        print("Invalid arguments (wrong branch name)")
-        exit()
-    except terroriser.TerroriserError as e:
-        print("Terroriser failed")
-        code.interact(local=locals())
-        exit()
-
-    if len(groupedX) == 1:
-        print("No data found for a particular branch")
-        exit()
+def numpyData(points):
+    groupdX, groupedY, labels = terroriser.group_data(points, [0,1,0,0,0,0])
 
     # format data for sklearn
     x = []; y = []
@@ -127,18 +83,42 @@ if __name__=="__main__":
         if varY < 0.4:
             print("WARNING: low variance on Y " + str(varY))
             print("Y axis doesn't provide a lot of information on " + labels[i])
-            
-    # start finding linear regressions
-    classifier = svm.SVR()
 
-    learningData = np.asarray(x[0])
-    targetValues = []
-
-    X = []
-    for i in range(len(x[0])):
-        X.append([x[0][i], y[0][i]])
-
-    X = np.asarray(X)
-    print(X)
+def findRegression(url):
+    config = [1,1,0,0,0,0]
+    try:
+        p = terroriser.getData(url, config, True)
+    except TypeError:
+        print("Invalid arguments")
+        exit()
+    except terroriser.TerroriserError as e:
+        print("Terroriser failed")
 
     code.interact(local=locals())
+
+# Main function for regression analysis
+if __name__=="__main__":
+
+    args = getUserArguments()
+
+    comparisonBranch = cleanString(args.baseline)
+    userBranch = cleanString(args.branch)
+
+    loginVSImax = "http://rage/?p=som_data&id=33&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
+    passmarkCPUScore = "http://rage/?p=som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
+    passmarkDiskMark = "http://rage/?p=som_data&id=565&xaxis=branch&xaxis=build_number&xaxis=build_date&auto_redraw=on&v_product=XenServer&v_product=XenServer-Transformer&f_branch=1" \
+        "&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&v_build_tag=all_hotfixes" \
+        "&v_build_tag=all_hotfixes%2Chttp%3A%2F%2Fcoltrane.uk.xensource.com%2Fusr%2Fgroups%2Fbuild" \
+        "%2Fdundee-lcm%2F513036%2Fhotfix-XS70E068%2FXS70E068.xsupdate%2Chttps%3A%2F%2Frepo.citrite.net" \
+        "%2Fxs-local-release-candidate%2FXenServer-7.x%2FXS-7.6%2Fupdates%2FXS76E004-UPD-484%2F24%2FXS76E004.iso" \
+        "%2Chttps%3A%2F%2Frepo.citrite.net%2Fxs-local-release-candidate%2FXenServer-7.x%2FXS-7.1.2%2Fupdates" \
+        "%2FXS71ECU2008-UPD-482%2F48%2FXS71ECU2008.iso%2Chttps%3A%2F%2Frepo.citrite.net%2Fxs-local-release-candidate" \
+        "%2FXenServer-8.x%2FXS-8.0%2Fupdates%2FXS80E001-UPD-483%2F21%2FXS80E001.iso&v_build_tag=all_hotfixes" \
+        "%2Cmandiant_installed%2Chttps%3A%2F%2Frepo.citrite.net%2Flist%2Fxs-local-assembly%2Fxenserver%2Frelease" \
+        "%2Fhavana%2FUPD-482%2F41%2FXS71ECU2008.iso&v_distro=win10-x64&v_vm_ram=8192&v_vcpus=4&v_postinstall=installDrivers"
+    durationOfNthVMClone = "http://rage/?p=som_data&id=266&xaxix=branch&xaxis=build_date&f_branch=1&f_build_date=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
+    simpleSyscall = "http://rage/?p=som_data&id=41&xaxis=branch&xaxis=build_number&xaxis=build_date&v_branch=" \
+        + comparisonBranch + "&v_branch=" + userBranch + "&v_arch=x86-64&v_vmvcpus=2&f_vmvcpus=1"
+
+    findRegression(simpleSyscall)
+
