@@ -270,13 +270,13 @@ def drawGraph(x, y, groupNames, config):
             if showlegend:
                 if config[5] == 1:
                     xOfAvg, avg = order(findAverage(tmpX, tmpY))
-                    plotAvg(xOfAvg, avg, label=group[i], line=True)
+                    plotAvg(xOfAvg, avg, label=groupNames[i], line=True)
                     continue
                 elif config[2] == 1:
-                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    plot = plt.plot(tmpX, tmpY, label=groupNames[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 if config[2] == 0:
-                    sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
+                    sc.append(plt.scatter(tmpX, tmpY, label=groupNames[i]))
             else:
                 if type(tmpX[0]) is list:
                     print("tmpX[0][0]: ", tmpX[0][0])
@@ -287,7 +287,7 @@ def drawGraph(x, y, groupNames, config):
                     plotAvg(xOfAvg, avg, line=True)
                     continue
                 elif config[2] == 1:
-                    plot = plt.plot(tmpX, tmpY, label=group[i])
+                    plot = plt.plot(tmpX, tmpY, label=groupNames[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
                 if config[2] == 0:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
