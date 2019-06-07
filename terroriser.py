@@ -235,11 +235,11 @@ def drawGraph(dataPoints, config):
                         break
                 k += 1
 
-    def plotAvg(xOfAvg, avg, line=False):
+    def plotAvg(xOfAvg, avg, label=None, line=False):
         if line:
-            plt.plot(xOfAvg, avg)
+            plt.plot(xOfAvg, avg, label=label)
         else:
-            plt.plot(xOfAvg, avg, marker="x", ms=10, color="black")
+            plt.plot(xOfAvg, avg, marker="x", ms=10, mec='black', mfc='black', label=label)
 
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
@@ -297,7 +297,7 @@ def drawGraph(dataPoints, config):
             if showlegend:
                 if config[5] == 1:
                     xOfAvg, avg = order(findAverage(tmpX, tmpY))
-                    plotAvg(xOfAvg, avg, line=True)
+                    plotAvg(xOfAvg, avg, label=group[i], line=True)
                     continue
                 elif config[2] == 1:
                     plot = plt.plot(tmpX, tmpY, label=group[i])
@@ -367,6 +367,8 @@ def analyseData(url, config):
             splitChoice.append(i)
             config[1] = 1
     # no splits from gui so default splits
+    if len(re.findall(r'&v_branch=', url)) > 1:
+        splitChoice.append('branch')
     else:
         splitChoice = ['branch']
 
