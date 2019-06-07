@@ -97,7 +97,6 @@ def json2points(f):
     global nPoints
     nPoints = j
 
-    print(results)
     # results = [xvalue, yvalue, splitByIdentifier]
     return results
 
@@ -105,10 +104,19 @@ def json2points(f):
 # corresponds to a pair (a[0] is with b[0], etc...)
 # orders based on a in ascending order
 # returns ordered arrays a, b
-def order(a, b):
+def order(a, b=None):
     map = []
-    for i in range(len(a)):
-        map.append([a[i],b[i]])
+    if type(a) is list and type(a[0]) is list and b == None:
+       # input list A was in the form a[0] = [x[0], y[0]]
+       # which is what we want. Change a and b to be lists of ints
+       map = a
+       a = [0]; b = [0]
+       a = a * len(map)
+       b = b * len(map)
+    # if two lists of ints or floats is passed
+    elif len(a) == len(b):
+        for i in range(len(a)):
+            map.append([a[i],b[i]])
 
     map = sorted(map)
     k = 0
@@ -131,8 +139,8 @@ def findAverage(x, y):
     for i in range(len(x)):
         l.append([x[i], y[i]])
 
-    values = set(map(lambda i:i[0], l))
-    newlist = [[j[1] for j in l if j[0]==i] for i in values]
+    uniqueX = set(map(lambda i:i[0], l))
+    newlist = [[j[1] for j in l if j[0]==i] for i in uniqueX]
 
     l = []
     for group in newlist:
@@ -227,9 +235,11 @@ def drawGraph(dataPoints, config):
                         break
                 k += 1
 
-    def plotAvg(points):
-        for i in points:
-            plt.plot(i[0], i[1], marker="x", ms=10, color="black")
+    def plotAvg(xOfAvg, avg, line=False):
+        if line:
+            plt.plot(xOfAvg, avg)
+        else:
+            plt.plot(xOfAvg, avg, marker="x", ms=10, color="black")
 
     # if we have chosen to split then plot multiple graphs
     global numOfSplits
@@ -285,30 +295,47 @@ def drawGraph(dataPoints, config):
             tmpX, tmpY = order(tmpX, tmpY)
 
             if showlegend:
-                if config[2] == 1:
+                if config[5] == 1:
+                    xOfAvg, avg = order(findAverage(tmpX, tmpY))
+                    plotAvg(xOfAvg, avg, line=True)
+                    continue
+                elif config[2] == 1:
                     plot = plt.plot(tmpX, tmpY, label=group[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
-                else:
+                if config[2] == 0:
                     sc.append(plt.scatter(tmpX, tmpY, label=group[i]))
             else:
                 if type(tmpX[0]) is list:
                     print("tmpX[0][0]: ", tmpX[0][0])
                     if type(tmpX[0][0]) is list:
                         print("tmpX[0][0][0]: ", tmpX[0][0][0])
-                if config[2] == 1:
+                if config[5] == 1:
+                    xOfAvg, avg = order(findAverage(tmpX, tmpY))
+                    plotAvg(xOfAvg, avg, line=True)
+                    continue
+                elif config[2] == 1:
                     plot = plt.plot(tmpX, tmpY, label=group[i])
                     sc.append(plt.scatter(tmpX, tmpY, label=None, color=plot[-1].get_color()))
-                else:
+                if config[2] == 0:
                     sc.append(plt.scatter(tmpX, tmpY, s=pointSize))
-            plotAvg(findAverage(tmpX, tmpY))
+            if config[4] == 1:
+                xOfAvg, avg = order(findAverage(tmpX, tmpY))
+                plotAvg(xOfAvg, avg)
 
     # no color used
     else:
+        x, y = order(x,y)
         if config[2] == 1:
             sc.append(plt.plot(x,y))
-        else:
+        if config[2] == 0:
             sc.append(plt.scatter(x,y, s=pointSize))
-        plotAvg(findAverage(x,y))
+        if config[5] == 1:
+            xOfAvg, avg = order(findAverage(x, y))
+            plotAvg(xOfAvg, avg, line=True)
+        elif config[4] == 1:
+            xOfAvg, avg = order(findAverage(x, y))
+            plotAvg(xOfAvg, avg)
+
     global xaxis; global yaxis
     plt.xlabel(xaxis)
     plt.ylabel(yaxis)

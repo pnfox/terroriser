@@ -213,12 +213,16 @@ class App(Tk):
         line = Checkbutton(graphOptions, variable=self.linePlot, bg=COLOR, fg=COLOR2).grid(column=1, row=1)
 
         Label(graphOptions, text="Show averages: ", background=COLOR, foreground=COLOR2).grid(column=0, row=2)
-        self.avgPlot = IntVar()
-        line = Checkbutton(graphOptions, variable=self.avgPlot, bg=COLOR, fg=COLOR2).grid(column=1, row=2)
+        self.showAvg = IntVar()
+        line = Checkbutton(graphOptions, variable=self.showAvg, bg=COLOR, fg=COLOR2).grid(column=1, row=2)
 
-        Label(graphOptions, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=0, row=3)
+        Label(graphOptions, text="Plot averages only: ", background=COLOR, foreground=COLOR2).grid(column=0, row=3)
+        self.avgPlot = IntVar()
+        line = Checkbutton(graphOptions, variable=self.avgPlot, bg=COLOR, fg=COLOR2).grid(column=1, row=3)
+
+        Label(graphOptions, text="Force yaxis 0: ", background=COLOR, foreground=COLOR2).grid(column=0, row=4)
         self.yaxis0 = IntVar()
-        yaxis = Checkbutton(graphOptions, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=1, row=3)
+        yaxis = Checkbutton(graphOptions, variable=self.yaxis0, bg=COLOR, fg=COLOR2).grid(column=1, row=4)
 
         return graphOptions
 
@@ -366,9 +370,12 @@ def okEvent():
                                or if tiny link is new please try again in a few minutes\n")
         return
 
-    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get(), root.avgPlot.get()]
+    config = [root.legend.get(), 0, root.linePlot.get(), root.yaxis0.get(), \
+              root.showAvg.get(), root.avgPlot.get()]
     if root.branchList.curselection() or optionName == "branch":
         config[1] = 1
+    if root.avgPlot.get():
+        config[2] = -1
 
     try:
         # start graphing
