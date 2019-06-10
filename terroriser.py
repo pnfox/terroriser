@@ -357,7 +357,7 @@ def group_data(dataPoints, config):
             except:
                 # didnt match
                 group.append(s)
-                x.append([]); y.append([])
+                x.append([(p[0], p[1])]); y.append([(p[0], p[1])])
 
     elif numOfSplits == 1:
         for p in dataPoints:
