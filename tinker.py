@@ -104,12 +104,11 @@ class CheckBar(Frame):
            self.box.insert("end", "\n")
            self.vars.append(var)
            self.checkboxes.append(chk)
-           self.box.configure(height=10)
-        self['height'] = 10
  
     def clear(self):
         for i in self.checkboxes:
             i.destroy()
+        self.box.delete('1.0', END)
 
 # Inserts dict key,value pairs to a listbox
 def insertListOptions(lbox, dict):
@@ -237,6 +236,8 @@ class App(Tk):
         return graphOptions
 
     def onDouble(self, event):
+        self.label_message.set("Updating GUI...")
+        self.update()
         updateSplits()
         self.label_message.set("")
         
@@ -246,7 +247,8 @@ class App(Tk):
         self.somListbox.delete(0, self.somListbox.size()-1)
         s = soms.soms.get(self.somTypeSelected.get())
         insertListOptions(self.somListbox, s)
-     
+        self.label_message.set("Double Click a TestCase for more options")
+
     def deselect(self, event):
         for i in self.somListbox.curselection():
             self.somListbox.select_clear(i)
@@ -422,7 +424,6 @@ def okEvent():
 
 def updateSplits():
  
-    root.label_message.set("Getting available branches")
     somID = None
     tmpDict = soms.soms.get(root.somTypeSelected.get())
     category = tmpDict.get(root.somListbox.get(root.somListbox.curselection()))
