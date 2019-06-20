@@ -19,10 +19,10 @@ def cleanString(string):
 def getUserArguments():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('baseline', type=str,
-                       help='branch name to compare against')
     parser.add_argument('branch', type=str,
                        help='branch name to find regressions in')
+    parser.add_argument('--branch2', type=str,
+                        help='branch name to compare performance results with')
 
     return parser.parse_args()
 
@@ -105,8 +105,10 @@ if __name__=="__main__":
 
     args = getUserArguments()
 
-    comparisonBranch = cleanString(args.baseline)
-    userBranch = cleanString(args.branch)
+    comparisonBranch = cleanString(args.branch)
+    userBranch = ""
+    if args.branch2:
+        userBranch = cleanString(args.branch2)
 
     loginVSImax = "http://rage/?p=som_data&id=33&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
     passmarkCPUScore = "http://rage/?p=som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
