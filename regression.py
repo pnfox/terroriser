@@ -57,8 +57,8 @@ def preprocessData(data):
 
     return newData
 
-def numpyData(points):
-    groupdX, groupedY, labels = terroriser.group_data(points, [0,1,0,0,0,0])
+def numpyData(t, points):
+    groupdX, groupedY, labels = t.groupData()
 
     # format data for sklearn
     x = []; y = []
@@ -86,8 +86,12 @@ def numpyData(points):
 
 def findRegression(url):
     config = [1,1,0,0,0,0]
+
+    t = Terroriser()
+    t.config = config
+    t.url = url
     try:
-        p = terroriser.getData(url, config, True)
+        p = t.getData(True)
     except TypeError:
         print("Invalid arguments")
         exit()

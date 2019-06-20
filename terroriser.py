@@ -24,6 +24,98 @@ class Terroriser:
         self.xaxis = ""
         self.yaxis = ""
 
+    # Gets data from rage given a url then uses json2points
+    # to parse data into python structures
+    def getData(self, regre = False):
+
+        self.regression = regre
+        somID = re.search(r"id=(\d+)", self.url).group(1)
+        if self.regression:
+            splits = re.findall(r'v_branch=(\w+\%?2?\w+\%?2?\w+)&', self.url)
+        else:
+            splits = re.findall(r'&f_(\w+)=1', self.url)
+        if splits:
+            for i in splits:
+                self.splitChoice.append(i)
+                self.config[1] = 1
+        # no splits from lib import funs gui so default splits
+        else:
+            self.splitChoice = ['branch']
+
+        if len(re.findall(r'&v_branch=', self.url)) > 1 and 'branch' not in self.splitChoice:
+            self.splitChoice.append('branch')
+
+        # Get som name
+        if os.name == "posix":
+            p1 = subprocess.Popen(["curl", "-s", "http://rage/?som=" + str(somID)], stdout=subprocess.PIPE)
+            p2 = subprocess.Popen(["grep", "som_name"], stdin=p1.stdout, stdout=subprocess.PIPE)
+            p1.stdout.close()
+            o = p2.communicate()[0]
+            self.som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
+
+        print("Fetching data.......", end='', flush=True)
+        self.xaxisChoice = re.findall(r'xaxis=(\w+)', self.url)
+        dir = os.getcwd()
+        # catch exception that wget fails (or maybe rage unavailable)
+        if os.name == "posix":
+            os.system("wget -q \"" + str(self.url)+ "\" -O /tmp/somdata" + str(somID))
+        if os.name == "nt":
+            response = requests.get(str(self.url))
+            response.raise_for_status()
+            with open(dir + "\\somdata" + str(somID), "w+") as h:
+                h.write(str((response.content).decode('utf-8')))
+        if os.name == "posix":
+            raw = open("/tmp/somdata" + str(somID))
+        if os.name == "nt":
+            raw = open(dir + "\\somdata" + str(somID))
+        print("COMPLETE")
+        print("Parsing JSON data......", end='', flush=True)
+        self.points = json2points(self, raw)
+
+        if not self.points:
+            print("No data found")
+            raise TerroriserError("No data found")
+
+        print("COMPLETE")
+        return self.points
+
+    def groupData(self):
+        # if we have chosen to split then plot multiple graphs
+        x = []; y = []; group = []
+        if self.numOfSplits > 1 or self.config[1]:
+            for p in self.points:
+                # collect different x,y's of each split value, excluding xaxis
+                # s will be the str concat of all splitIndentifies from json2points()
+                s = ""
+                for i in range(self.numOfSplits):
+                    if i in self.axisPos:
+                        # if we used branch list (assuming this is also xaxis value)
+                        # or we branch was other option field
+                        # then dont continue as we want to color different branches
+                        if self.config[1] == 0:
+                            continue
+                    if self.regression:
+                        s += p[3] + "\n"
+                    else:
+                        s += str(p[i+3]) + "\n"
+                try:
+                    position = group.index(s)
+                    x[position].append((p[0], p[1]))
+                    y[position].append((p[0], p[2]))
+                except:
+                    # didnt match
+                    group.append(s)
+                    x.append([(p[0], p[1])]); y.append([(p[0], p[1])])
+
+        elif self.numOfSplits == 1:
+            for p in self.points:
+                x.append(p[1])
+                y.append(p[2])
+
+        return x, y, group
+
+# End of Terroriser class
+ 
 def json2points(t, f):
     json_data=f.read()
     if len(json_data.split()) == 0:
@@ -294,103 +386,14 @@ def drawGraph(t, x, y, groupNames, config):
     except e:
         raise TerroriserError("Couldn't plot graph")
 
-def group_data(t, dataPoints, config):
-    # if we have chosen to split then plot multiple graphs
-    x = []; y = []; group = []
-    if t.numOfSplits > 1 or config[1]:
-        for p in dataPoints:
-            # collect different x,y's of each split value, excluding xaxis
-            # s will be the str concat of all splitIndentifies from json2points()
-            s = ""
-            for i in range(t.numOfSplits):
-                if i in t.axisPos:
-                    # if we used branch list (assuming this is also xaxis value)
-                    # or we branch was other option field
-                    # then dont continue as we want to color different branches
-                    if config[1] == 0:
-                        continue
-                if t.regression:
-                    s += p[3] + "\n"
-                else:
-                    s += str(p[i+3]) + "\n"
-            try:
-                position = group.index(s)
-                x[position].append((p[0], p[1]))
-                y[position].append((p[0], p[2]))
-            except:
-                # didnt match
-                group.append(s)
-                x.append([(p[0], p[1])]); y.append([(p[0], p[1])])
-
-    elif t.numOfSplits == 1:
-        for p in dataPoints:
-            x.append(p[1])
-            y.append(p[2])
-
-    return x, y, group
-
-
-
-# Gets data from rage given a url then uses json2points
-# to parse data into python structures
-def getData(t, url, config, regre = False):
-
-    t.regression = regre
-    print(url)
-    somID = re.search(r"id=(\d+)", url).group(1)
-    if t.regression:
-        splits = re.findall(r'v_branch=(\w+\%?2?\w+\%?2?\w+)&', url)
-    else:
-        splits = re.findall(r'&f_(\w+)=1', url)
-    if splits:
-        for i in splits:
-            t.splitChoice.append(i)
-            config[1] = 1
-    # no splits from gui so default splits
-    else:
-        t.splitChoice = ['branch']
-
-    if len(re.findall(r'&v_branch=', url)) > 1 and 'branch' not in t.splitChoice:
-        t.splitChoice.append('branch')
-
-    print("Fetching data.......", end='', flush=True)
-    t.xaxisChoice = re.findall(r'xaxis=(\w+)', url)
-    dir = os.getcwd()
-    # catch exception that wget fails (or maybe rage unavailable)
-    if os.name == "posix":
-        os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
-    if os.name == "nt":
-        response = requests.get(str(url))
-        response.raise_for_status()
-        with open(dir + "\\somdata" + str(somID), "w+") as h:
-            h.write(str((response.content).decode('utf-8')))
-    if os.name == "posix":
-        raw = open("/tmp/somdata" + str(somID))
-    if os.name == "nt":
-        raw = open(dir + "\\somdata" + str(somID))
-    print("COMPLETE")
-    print("Parsing JSON data......", end='', flush=True)
-    t.points = json2points(t, raw)
-    if not t.points:
-        print("No data found")
-        raise TerroriserError("No data found")
-
-    # Get som name
-    if os.name == "posix":
-        p1 = subprocess.Popen(["curl", "-s", "http://rage/?som=" + str(somID)], stdout=subprocess.PIPE)
-        p2 = subprocess.Popen(["grep", "som_name"], stdin=p1.stdout, stdout=subprocess.PIPE)
-        p1.stdout.close()
-        o = p2.communicate()[0]
-        t.som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
-
-    print("COMPLETE")
-    return t.points
-    
 # Main entry point for the tinker program
 def tinkerEntryPoint(url, config):
 
     terroriser = Terroriser()
-    p = getData(terroriser, url, config, False)
-    x, y, groupNames = group_data(terroriser, p, config)
+    terroriser.url = url
+    terroriser.config = config
+    print(url)
+    terroriser.getData(False)
+    x, y, groupNames = terroriser.groupData()
     print("Plotting data.........", end='', flush=True)
     drawGraph(terroriser, x, y, groupNames, config)
