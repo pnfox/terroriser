@@ -7,42 +7,116 @@ import matplotlib.pyplot as plt
 import requests
 import statistics
 
-points = []
-nPoints = 0
-numOfSplits = 0
-axisPos = []
-splitNames = []
-splitChoice = []
-xaxis = ""
-yaxis = ""
-som_name = ""
-
-def initialize():
-    global points
-    global pointInformation
-    global nPoints
-    global numOfSplits
-    global axisPos
-    global splitNames
-    global splitChoice
-    global xaxisChoice
-    global xaxis
-    global yaxis
-    global regression
-    points = []
-    nPoints = 0
-    numOfSplits = 0
-    axisPos = []
-    splitNames = []
-    splitChoice = []
-    xaxis = ""
-    yaxis = ""
 
 class TerroriserError(Exception):
     def __init__(self, message):
         super().__init__(message)
 
-def json2points(f):
+class Terroriser:
+    
+    def __init__(self):
+        self.points = []
+        self.nPoints = 0
+        self.numOfSplits = 0
+        self.axisPos = []
+        self.splitNames = []
+        self.splitChoice = []
+        self.xaxis = ""
+        self.yaxis = ""
+
+    # Gets data from rage given a url then uses json2points
+    # to parse data into python structures
+    def getData(self, regre = False):
+
+        self.regression = regre
+        somID = re.search(r"id=(\d+)", self.url).group(1)
+        if self.regression:
+            splits = re.findall(r'v_branch=(\w+\%?2?\w+\%?2?\w+)&', self.url)
+        else:
+            splits = re.findall(r'&f_(\w+)=1', self.url)
+        if splits:
+            for i in splits:
+                self.splitChoice.append(i)
+                self.config[1] = 1
+        # no splits from lib import funs gui so default splits
+        else:
+            self.splitChoice = ['branch']
+
+        if len(re.findall(r'&v_branch=', self.url)) > 1 and 'branch' not in self.splitChoice:
+            self.splitChoice.append('branch')
+
+        # Get som name
+        if os.name == "posix":
+            p1 = subprocess.Popen(["curl", "-s", "http://rage/?som=" + str(somID)], stdout=subprocess.PIPE)
+            p2 = subprocess.Popen(["grep", "som_name"], stdin=p1.stdout, stdout=subprocess.PIPE)
+            p1.stdout.close()
+            o = p2.communicate()[0]
+            self.som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
+
+        print("Fetching data.......", end='', flush=True)
+        self.xaxisChoice = re.findall(r'xaxis=(\w+)', self.url)
+        dir = os.getcwd()
+        # catch exception that wget fails (or maybe rage unavailable)
+        if os.name == "posix":
+            os.system("wget -q \"" + str(self.url)+ "\" -O /tmp/somdata" + str(somID))
+        if os.name == "nt":
+            response = requests.get(str(self.url))
+            response.raise_for_status()
+            with open(dir + "\\somdata" + str(somID), "w+") as h:
+                h.write(str((response.content).decode('utf-8')))
+        if os.name == "posix":
+            raw = open("/tmp/somdata" + str(somID))
+        if os.name == "nt":
+            raw = open(dir + "\\somdata" + str(somID))
+        print("COMPLETE")
+        print("Parsing JSON data......", end='', flush=True)
+        self.points = json2points(self, raw)
+
+        if not self.points:
+            print("No data found")
+            raise TerroriserError("No data found")
+
+        print("COMPLETE")
+        return self.points
+
+    def groupData(self):
+        # if we have chosen to split then plot multiple graphs
+        x = []; y = []; group = []
+        if self.numOfSplits > 1 or self.config[1]:
+            for p in self.points:
+                # collect different x,y's of each split value, excluding xaxis
+                # s will be the str concat of all splitIndentifies from json2points()
+                s = ""
+                for i in range(self.numOfSplits):
+                    if i in self.axisPos:
+                        # if we used branch list (assuming this is also xaxis value)
+                        # or we branch was other option field
+                        # then dont continue as we want to color different branches
+                        if self.config[1] == 0:
+                            continue
+                    if self.regression:
+                        s += p[3] + "\n"
+                    else:
+                        s += str(p[i+3]) + "\n"
+                try:
+                    position = group.index(s)
+                    x[position].append((p[0], p[1]))
+                    y[position].append((p[0], p[2]))
+                except:
+                    # didnt match
+                    group.append(s)
+                    x.append([(p[0], p[1])]); y.append([(p[0], p[1])])
+
+        elif self.numOfSplits == 1:
+            for p in self.points:
+                x.append(p[1])
+                y.append(p[2])
+
+        return x, y, group
+
+# End of Terroriser class
+ 
+def json2points(t, f):
     json_data=f.read()
     if len(json_data.split()) == 0:
         return None
@@ -50,57 +124,47 @@ def json2points(f):
     # data is a python dict
     data = json.loads(json_data)
     xlabels = data.get("x_labels")
-    global xaxis
-    global yaxis
-    xaxis = data.get("xaxis")
-    yaxis = data.get("yaxis")
-    global points
+    t.xaxis = data.get("xaxis")
+    t.yaxis = data.get("yaxis")
     series = data.get("series")
     if not series:
         raise TerroriserError("No data in RAGE, old jobs")
 
     for i in range(len(series)):
          for p in series[i].get("data"):
-             points.append(p)
-    global splitNames
-    splitNames = list(points[0][2].keys())
-    global numOfSplits
-    global splitChoice
+             t.points.append(p)
+    t.splitNames = list(t.points[0][2].keys())
     # splitChoice contains the values of &f_(\w+)= in the url 
-    numOfSplits = len(splitChoice)
+    t.numOfSplits = len(t.splitChoice)
 
-    global axisPos
     # xaxis branch is selected by user but
     # position of branch values in points.keys() is undetermined
     # this finds the position, we need this later
-    for x in xaxis.split(","):
-        position = list(points[0][2].keys()).index(x)
+    for x in t.xaxis.split(","):
+        position = list(t.points[0][2].keys()).index(x)
         if position:
-            axisPos.append(position)
+            t.axisPos.append(position)
 
     results = []
-    global pointInformation
-    pointInformation = []
+    t.pointInformation = []
     # find split options in json
     j = 0
-    for i in points:
+    for i in t.points:
         results.append([j, i[0], i[1]])
         dict = i[2]
-        pointInformation.append([j, dict.values()])
+        t.pointInformation.append([j, dict.values()])
         # Add the splitByIdentifier, used later to determine color
-        if not splitChoice:
+        if not t.splitChoice:
             for v in dict.values():
                 results[j].append(v)
         else:
-            global regression
-            if regression:
+            if t.regression:
                 results[j].append(dict.get("branch"))
             else:
-                for split in splitChoice:
+                for split in t.splitChoice:
                     results[j].append(dict.get(split))
         j = j + 1
-    global nPoints
-    nPoints = j
+    t.nPoints = j
 
     # results = [xvalue, yvalue, splitByIdentifier]
     return results
@@ -159,7 +223,7 @@ def findAverage(x, y):
 # Given the dataPoints which contains cartesian positions and
 # also contains split configuration. Config contains user
 # input on how he/she wishes the graphs to be drawn
-def drawGraph(x, y, groupNames, config):
+def drawGraph(t, x, y, groupNames, config):
 
     showlegend = config[0]
 
@@ -201,21 +265,19 @@ def drawGraph(x, y, groupNames, config):
         annot.get_bbox_patch().set_alpha(0.2)
 
     def printInformation(ID):
-        global pointInformation
-        global xaxisChoice
         # pointInformation = [[pointID, infoArray], [pointID, infoArray], ...]
 
         # find the point
-        for i in pointInformation:
+        for i in t.pointInformation:
             if i[0] == ID:
                 info = i[1]
 
         string = ""
         # parse the info
         info = list(info)
-        xaxisChoice.reverse()
-        for i in range(len(xaxisChoice)):
-            string += xaxisChoice[i] + ": " + info[i] + "\n"
+        t.xaxisChoice.reverse()
+        for i in range(len(t.xaxisChoice)):
+            string += t.xaxisChoice[i] + ": " + info[i] + "\n"
 
         return string
 
@@ -246,11 +308,10 @@ def drawGraph(x, y, groupNames, config):
         else:
             plt.plot(xOfAvg, avg, marker="x", ms=10, mec='black', mfc='black', label=label)
 
-    global nPoints
-    pointSize=250/(nPoints)**0.35
+    pointSize=250/(t.nPoints)**0.35
     sc = []
     # if we use splits or config[1] then color different plots
-    if numOfSplits > 1 or config[1]:
+    if t.numOfSplits > 1 or config[1]:
         for i in range(len(x)):
 
             # order points so that plotted properly
@@ -309,17 +370,15 @@ def drawGraph(x, y, groupNames, config):
             xOfAvg, avg = order(findAverage(x, y))
             plotAvg(xOfAvg, avg)
 
-    global xaxis; global yaxis
-    plt.xlabel(xaxis)
-    plt.ylabel(yaxis)
+    plt.xlabel(t.xaxis)
+    plt.ylabel(t.yaxis)
     cid = fig.canvas.mpl_connect("button_press_event", onclick)
 
     if config[3] == 1:
         ax.set_ylim(bottom=0)
     if showlegend:
         plt.legend()
-    global som_name
-    plt.title(som_name)
+    plt.title(t.som_name)
     try:
         print("COMPLETE")
         plt.show()
@@ -327,111 +386,14 @@ def drawGraph(x, y, groupNames, config):
     except e:
         raise TerroriserError("Couldn't plot graph")
 
-def group_data(dataPoints, config):
-    # if we have chosen to split then plot multiple graphs
-    global numOfSplits
-    global splitNames
-    global regression
-    x = []; y = []; group = []
-    if numOfSplits > 1 or config[1]:
-        global axisPos
-        for p in dataPoints:
-            # collect different x,y's of each split value, excluding xaxis
-            # s will be the str concat of all splitIndentifies from json2points()
-            s = ""
-            for i in range(numOfSplits):
-                if i in axisPos:
-                    # if we used branch list (assuming this is also xaxis value)
-                    # or we branch was other option field
-                    # then dont continue as we want to color different branches
-                    if config[1] == 0:
-                        continue
-                if regression:
-                    s += p[3] + "\n"
-                else:
-                    s += str(p[i+3]) + "\n"
-            try:
-                position = group.index(s)
-                x[position].append((p[0], p[1]))
-                y[position].append((p[0], p[2]))
-            except:
-                # didnt match
-                group.append(s)
-                x.append([(p[0], p[1])]); y.append([(p[0], p[1])])
-
-    elif numOfSplits == 1:
-        for p in dataPoints:
-            x.append(p[1])
-            y.append(p[2])
-
-    return x, y, group
-
-
-
-# Gets data from rage given a url then uses json2points
-# to parse data into python structures
-def getData(url, config, regre = False):
-
-    initialize()
-    global regression
-    regression = regre
-    global splitChoice
-    print(url)
-    somID = re.search(r"id=(\d+)", url).group(1)
-    if regression:
-        splits = re.findall(r'v_branch=(\w+\%?2?\w+\%?2?\w+)&', url)
-    else:
-        splits = re.findall(r'&f_(\w+)=1', url)
-    if splits:
-        for i in splits:
-            splitChoice.append(i)
-            config[1] = 1
-    # no splits from gui so default splits
-    else:
-        splitChoice = ['branch']
-
-    if len(re.findall(r'&v_branch=', url)) > 1 and 'branch' not in splitChoice:
-        splitChoice.append('branch')
-
-    print("Fetching data.......", end='', flush=True)
-    global xaxisChoice
-    xaxisChoice = re.findall(r'xaxis=(\w+)', url)
-    dir = os.getcwd()
-    # catch exception that wget fails (or maybe rage unavailable)
-    if os.name == "posix":
-        os.system("wget -q \"" + str(url)+ "\" -O /tmp/somdata" + str(somID))
-    if os.name == "nt":
-        response = requests.get(str(url))
-        response.raise_for_status()
-        with open(dir + "\\somdata" + str(somID), "w+") as h:
-            h.write(str((response.content).decode('utf-8')))
-    if os.name == "posix":
-        raw = open("/tmp/somdata" + str(somID))
-    if os.name == "nt":
-        raw = open(dir + "\\somdata" + str(somID))
-    print("COMPLETE")
-    print("Parsing JSON data......", end='', flush=True)
-    points = json2points(raw)
-    if not points:
-        print("No data found")
-        raise TerroriserError("No data found")
-
-    # Get som name
-    if os.name == "posix":
-        p1 = subprocess.Popen(["curl", "-s", "http://rage/?som=" + str(somID)], stdout=subprocess.PIPE)
-        p2 = subprocess.Popen(["grep", "som_name"], stdin=p1.stdout, stdout=subprocess.PIPE)
-        p1.stdout.close()
-        o = p2.communicate()[0]
-        global som_name
-        som_name = re.search(r'som_name\'>([\w+\s+\(\)]+)', str(o)).group(1)
-
-    print("COMPLETE")
-    return points
-    
 # Main entry point for the tinker program
 def tinkerEntryPoint(url, config):
 
-    p = getData(url, config, False)
-    x, y, groupNames = group_data(p, config)
+    terroriser = Terroriser()
+    terroriser.url = url
+    terroriser.config = config
+    print(url)
+    terroriser.getData(False)
+    x, y, groupNames = terroriser.groupData()
     print("Plotting data.........", end='', flush=True)
-    drawGraph(x, y, groupNames, config)
+    drawGraph(terroriser, x, y, groupNames, config)
