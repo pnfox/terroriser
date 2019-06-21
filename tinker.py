@@ -293,6 +293,10 @@ class App(Tk):
             self.somListbox['state'] = NORMAL
             self.somListbox['background'] = COLOR
 
+    def log(self, message):
+        root.label_message.set(message)
+        root.update()
+
 def reset():
     root.checkbar.clear()
     root.somListbox.delete(0, root.somListbox.size()-1)
@@ -369,12 +373,12 @@ def okEvent():
     if url:
         # we use url from url TextBox, check validation
         if not re.match(r'http://rage/\?(som|t)=', url):
-            root.label_message.set("Invalid url provided")
+            root.log("Invalid url provided")
             return
         else:
             url = parseTinyUrl(url)
             if url:
-                root.label_message.set("Using raw url")
+                root.log("Using url")
             else:
                 return
             url = url + getOptions()
@@ -387,10 +391,10 @@ def okEvent():
         somID = tmpDict.get(root.somListbox.get(listSelected))
         if not somID:
             return
-        root.label_message.set("Graphing data for SOM: " + str(somID))
+        root.log("Graphing data for SOM: " + str(somID))
         url = "http://rage/?p=som_data&id=" + str(somID) + options + getOptions()
     else:
-        root.label_message.set("Nothing to graph\n\nIts possible data is not in RAGE anymore \
+        root.log("Nothing to graph\n\nIts possible data is not in RAGE anymore \
                                or if tiny link is new please try again in a few minutes\n")
         return
 
@@ -403,20 +407,16 @@ def okEvent():
 
     try:
         # start graphing
-        root.label_message.set("Starting to graph")
-        p = Process(target=terroriser.tinkerEntryPoint(url, config), args=(url, config, ))
+        p = Process(target=terroriser.tinkerEntryPoint(root, url, config), args=(url, config, ))
         p.start()
-        p.join()
-        root.label_message.set("")
+        p.terminate()
         # TODO: catch process error code for better error logging
     except JSONDecodeError as e:
-        print(e)
-        root.label_message.set("Failed to parse JSON")
+        root.log("Failed to parse JSON")
     except terroriser.TerroriserError as e:
-        root.label_message.set(e)
+        root.log(e)
     except e:
-        print(e)
-        root.label_message.set("Failed to graph")
+        root.log("Failed to graph")
 
     global tmpFiles
     if somID:

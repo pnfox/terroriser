@@ -387,13 +387,16 @@ def drawGraph(t, x, y, groupNames, config):
         raise TerroriserError("Couldn't plot graph")
 
 # Main entry point for the tinker program
-def tinkerEntryPoint(url, config):
+def tinkerEntryPoint(GUI, url, config):
 
     terroriser = Terroriser()
     terroriser.url = url
     terroriser.config = config
     print(url)
+    GUI.log("Getting data...")
     terroriser.getData(False)
     x, y, groupNames = terroriser.groupData()
+    GUI.log("Graphing...")
     print("Plotting data.........", end='', flush=True)
     drawGraph(terroriser, x, y, groupNames, config)
+    return
