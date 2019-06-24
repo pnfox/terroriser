@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import requests
 import statistics
 
-
 class TerroriserError(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -87,17 +86,17 @@ class Terroriser:
                 # collect different x,y's of each split value, excluding xaxis
                 # s will be the str concat of all splitIndentifies from json2points()
                 s = ""
-                for i in range(self.numOfSplits):
-                    if i in self.axisPos:
-                        # if we used branch list (assuming this is also xaxis value)
-                        # or we branch was other option field
-                        # then dont continue as we want to color different branches
-                        if self.config[1] == 0:
-                            continue
-                    if self.regression:
-                        s += p[3] + "\n"
-                    else:
+                if not self.regression:
+                    for i in range(self.numOfSplits):
+                        if i in self.axisPos:
+                            # if we used branch list (assuming this is also xaxis value)
+                            # or we branch was other option field
+                            # then dont continue as we want to color different branches
+                            if self.config[1] == 0:
+                                continue
                         s += str(p[i+3]) + "\n"
+                else:
+                    s = str(p[3])
                 try:
                     position = group.index(s)
                     x[position].append((p[0], p[1]))
@@ -159,7 +158,9 @@ def json2points(t, f):
                 results[j].append(v)
         else:
             if t.regression:
-                results[j].append(dict.get("branch"))
+                results[j].append(dict.pop("branch"))
+                for i in range(len(dict)):
+                    results[j].append(dict.popitem()[1])
             else:
                 for split in t.splitChoice:
                     results[j].append(dict.get(split))
