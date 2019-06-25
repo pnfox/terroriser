@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-import os
+import sys
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.decomposition import PCA
+from sklearn.cluster import SpectralClustering, KMeans, MeanShift
 from sklearn.metrics import mean_squared_error
 from sklearn import svm
 from sklearn import preprocessing
 import terroriser
 
-#degug
-import code
 
 def cleanString(string):
     return string.replace("/", "%2F")
@@ -19,10 +19,10 @@ def cleanString(string):
 def getUserArguments():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('baseline', type=str,
-                       help='branch name to compare against')
     parser.add_argument('branch', type=str,
                        help='branch name to find regressions in')
+    parser.add_argument('--branch2', type=str,
+                        help='branch name to compare performance results with')
 
     return parser.parse_args()
 
@@ -31,7 +31,7 @@ def ordinalEncode(data):
     encoder = preprocessing.OrdinalEncoder()
     encodedData = encoder.fit_transform(data)
 
-    return encodedData
+    return encodedData, encoder
 
 # Used on arrays which store all point information
 # including branch, build_date, ...
@@ -46,8 +46,11 @@ def preprocessData(data):
     tmp = []
 
     for i in data:
-        tmp.append(i[3:])
-    tmp = ordinalEncode(tmp)
+        tmp.append([i[3:]])
+    tmp = np.asarray(tmp)
+    nsamples, nx, ny = tmp.shape
+    tmp = tmp.reshape((nsamples, nx*ny))
+    tmp, encoder = ordinalEncode(tmp)
     assert len(tmp) == len(data)
 
     entry = []
@@ -55,10 +58,10 @@ def preprocessData(data):
         entry = [data[i][0], data[i][1], data[i][2]] + list(tmp[i])
         newData.append(entry)
 
-    return newData
+    return newData, encoder
 
-def numpyData(points):
-    groupdX, groupedY, labels = terroriser.group_data(points, [0,1,0,0,0,0])
+def numpyData(t, points):
+    groupedX, groupedY, labels = t.groupData()
 
     # format data for sklearn
     x = []; y = []
@@ -84,25 +87,114 @@ def numpyData(points):
             print("WARNING: low variance on Y " + str(varY))
             print("Y axis doesn't provide a lot of information on " + labels[i])
 
+    return x, y, labels
+
 def findRegression(url):
     config = [1,1,0,0,0,0]
+
+    t = terroriser.Terroriser()
+    t.config = config
+    t.url = url
     try:
-        p = terroriser.getData(url, config, True)
+        p = t.getData(regre=True)
     except TypeError:
         print("Invalid arguments")
         exit()
     except terroriser.TerroriserError as e:
         print("Terroriser failed")
 
-    code.interact(local=locals())
+    # Plot original data
+    print("Plotting original Data")
+    x, y, labels = numpyData(t, p)
+    for i in range(len(x)):
+        plt.scatter(x[i], y[i], label=labels[i])
+    plt.legend()
+    plt.show()
+
+    m = MachineRegressionFinder(p)
+
+class MachineRegressionFinder:
+
+    def __init__(self, data):
+
+        self.encodedData, self.encoder = preprocessData(data)
+        self.encodedData = np.asarray(self.encodedData)
+        # use branch as target
+        self.target = self.encodedData[0:, 3]
+
+    def PCA(self, components=2, branch='master'):
+        """
+        Used for finding correlations in the data
+        creates a transformedData for the object this is
+        a dimentionality reduction of encodedData. Also creates
+        a pca object for an instance of this MachineRegressionFinder class
+        """
+        branchName = branch
+
+        if components < 0 or components > len(self.encodedData[0]):
+            print("MachineRegressionFinder.PCA: Invalid dimension for PCA")
+        if components > 2:
+            print("MachineRegressionFinder.PCA: more than 2 dimensions given but only plotting 2")
+        if type(branch) is not str:
+            print("MachineRegressionFinder.PCA: Branch must be string")
+            return
+
+        # if given translate branch (str) into int
+        try:
+            branch = int(self.encoder.transform([[branch]])[0][0])
+        except ValueError:
+            print("MachineRegressionFinder.PCA: Invalid branch argument")
+            return
+
+        # Perform PCA
+        self.pca = PCA(n_components=components)
+        self.pca.fit(self.encodedData[self.target == branch])
+        self.transformedData = self.pca.transform(self.encodedData[self.target == branch])
+
+        # plot transformed data
+        print("Plotting PCA data of %s" % branchName)
+        plt.scatter(self.transformedData[0: ,0], self.transformedData[0: ,1])
+        plt.xlabel("First component")
+        plt.ylabel("Second component")
+        plt.title("PCA")
+        plt.show()
+
+    def regression(self):
+        self.reg = LinearRegression().fit(self.transformedData, self.target)
+
+    def cluster(self, clusters=3):
+        # Should be used after PCA
+        # Will find groups of correlated data in n dimensions
+
+        self.clustering = KMeans(n_clusters=clusters, random_state=0).fit(self.transformedData)
+        #clustering = SpectralClustering(n_clusters=clusters, random_state=0).fit(transformedData[target == 1])
+        #clustering = MeanShift(bandwidth=18).fit(transformedData[target==1])
+
+        y_pred = self.predictCluster(self.transformedData)
+        if y_pred.any():
+            plt.scatter(self.transformedData[0: ,0], self.transformedData[0: ,1], c=y_pred)
+            plt.show()
+
+    def predictCluster(self, newData):
+        """
+        Given some new data predict which group points belong to
+        """
+        try:
+            self.y_pred = self.clustering.fit_predict(newData)
+        except ValueError:
+            print("MachineRegressionFinder.predictCluster: should be atleast same number of points as clusters", file=sys.stderr)
+            return None
+        return self.y_pred
 
 # Main function for regression analysis
 if __name__=="__main__":
 
     args = getUserArguments()
 
-    comparisonBranch = cleanString(args.baseline)
-    userBranch = cleanString(args.branch)
+    comparisonBranch = cleanString(args.branch)
+    userBranch = ""
+    if args.branch2:
+        userBranch = cleanString(args.branch2)
 
     loginVSImax = "http://rage/?p=som_data&id=33&xaxis=numvms&f_branch=1&v_branch=" + comparisonBranch + "&v_branch=" + userBranch + "&"
     passmarkCPUScore = "http://rage/?p=som_data&id=562&xaxis=branch&xaxis=build_number&xaxis=build_date&f_branch=1&v_branch=" + comparisonBranch + "&v_branch" + userBranch
